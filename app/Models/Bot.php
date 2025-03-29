@@ -28,5 +28,7 @@ class Bot extends Model
         "pending_update_count",
         "max_connections",
         "ip_address",
+        "status",
+        "description"
     ];
 }
