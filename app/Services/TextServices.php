@@ -56,8 +56,9 @@ class TextServices
     public function __construct($token)
     {
         $this->token = $token;
+
         $this->bot = cache()->remember("token_" . $token, now()->addDay(), function () {
-            return Bot::where('token', $this->token)->where("status", 1)->first();
+            return Bot::where('token', $this->token)->where("status",true)->first();
         });
         $this->telegram = new Api($this->bot->token);
 
