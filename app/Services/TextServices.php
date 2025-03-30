@@ -157,7 +157,7 @@ class TextServices
      */
     public function setUser(): void
     {
-        $user_telegram = UserTelegram::where("telegram_id", $this->user_id)->with(["customerUser", "customer.userTradeAccess", "userTradeAccess"])->withTrashed()->first();
+        $user_telegram = UserTelegram::where("telegram_id", $this->user_id)->withTrashed()->first();
         if ($user_telegram == null && $this->user_id) {
             $update = $this->update;
             $type = $this->type_message;
@@ -169,7 +169,7 @@ class TextServices
                 "mobile" => data_get($update, $type . '.mobile'),
                 "username" => data_get($update, $type . '.from.username'),
                 "language_code" => data_get($update, $type . '.from.language_code'),
-                "role" => "customer",
+                "role" => "user",
                 "status" => false,
             ]);
             if ($update && $data) {
