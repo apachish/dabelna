@@ -11,7 +11,7 @@ class UserTelegram extends Model
     use SoftDeletes;
     use HasFactory;
 
-    protected $table = 'user_telegram';
+    protected $table = 'user_telegrams';
     protected $fillable = [
         "is_bot",
         "telegram_id",
