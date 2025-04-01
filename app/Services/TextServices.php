@@ -2,14 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Bot;
-use App\Models\BotMenuUser;
-use App\Models\CustomerUser;
-use App\Models\Setting;
-use App\Models\TextTelegram;
-use App\Models\Transfer;
-use App\Models\UserTelegram;
-use App\Models\UserTradeAccess;
+
+use Apachish\Dabelna\App\Models\Bot;
+use Apachish\Dabelna\App\Models\Setting;
+use Apachish\Dabelna\App\Models\TextTelegram;
+use Apachish\Dabelna\App\Models\UserTelegram;
 use Telegram\Bot\Api;
 
 class TextServices
@@ -256,6 +253,24 @@ class TextServices
         // data_get($cache_data, "title")
     }
 
+    /**
+     * @return mixed
+     */
+    public function getBotAdmin()
+    {
+        return new Api($this->bot_admin->token);;
+    }
+
+    /**
+     * @param mixed $bot_admin
+     */
+    public function setBotAdmin(): void
+    {
+        $bot = Bot::where("title", "botManage")->first();
+        $this->bot_admin = $bot ?: null;
+    }
+
+
     public function removeMessageCache(): void
     {
         $this->message_cache = null;
@@ -264,43 +279,6 @@ class TextServices
     }
     /**
      * @return mixed
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
-
-    /**
-     * @param mixed $type
-     */
-    public function setType($type,$description=null): void
-    {
-        if(in_array($type,$this->list_type_floating) && $description)
-            $this->type = $type."ط";//شنا شرطی
-        elseif(in_array($type,$this->list_type_reverse) && $description)
-            $this->type = $type."ط";//معکوس شرطی
-        else
-        $this->type = $type;
-
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getPattern()
-    {
-        return $this->pattern;
-    }
-
-    /**
-     * @param mixed $pattern
-     */
-    public function setPattern(): void
-    {
-//        $this->pattern = "/^\d{3,5}" . $this->type . "\d{1}$/";
-//        $this->pattern = "/^([0-9]{3}|[0-9]{5})$this->type([1-3]?)$/";
-        $this->pattern = "/^([0-9]{3}|[0-9]{5})$this->type([1-3]?)(:.*)?$/u";
-    }
 
     /**
      * @return mixed
@@ -329,54 +307,17 @@ class TextServices
             "/start",
             "start",
             "/help",
-            "کنسل",
-            "نشد",
-            "ن",
             "منو",
-            "\xF0\x9F\x91\xA5معرفی مشتری",
-            "\xF0\x9F\x93\x88معاملات باز",
-            "\xF0\x9F\x93\x8Bلیست همکاران",
+            "\xF0\x9F\x8E\xABخرید بلیط",
+            "\xF0\x9F\x92\xB3کیف پول",
+            "پروفایل\xF0\x9F\x91\xA4",
             "\xF0\x9F\x93\x9Aقوانین",
             "راهنما\xE2\x81\x89",
-            "\xF0\x9F\x92\xB3حق اشتراک",
-            "\xE2\x8C\x9Bمدت اشتراک",
-            "\xE2\x9A\xA0\xE2\x9D\x8Cغیرفعال سازی تایید دو مرحله ای",
-            "\xE2\x9C\x8Cفعال سازی دو مرحله ای",
-            "\xE2\x9D\x8Cغیر فعال فوری",
             "قوانین را خواندم و آنها را پذیرفتم",
             "راهنما را خواندم و یاد گرفتم",
         ];
         if (in_array($this->message, $accept))
             return true;
-        $im = implode("|", $this->list_type);
-        $pattern_un = "/^([0-9]{3}|[0-9]{5})($im)([4-9]?)(:.*)?$/u";
-        if (preg_match($pattern_un, $this->message, $matches)) {
-            $optionalNumber = isset($matches[3]) && $matches[3] ? $matches[3] : '1'; // اگر گروه سوم خالی بود، مقدار ۱ قرار داده شود
-
-            if ($optionalNumber < 1 || $optionalNumber > 3) {
-                $this->telegram_services->sendMessage($this->getUserId(), "❌ حداکثر تعداد برای هر لفظ ۳ تا میباشد ❌");
-                return false;
-            }
-        }
-        $pattern = "/^([0-9]{3}|[0-9]{5})($im)([1-3]?)(:.*)?$/u";
-
-        if (preg_match($pattern, $this->message, $matches)) {
-            $this->setPrice($matches[1]);
-            $optionalNumber = isset($matches[3]) && $matches[3] ? $matches[3] : '1'; // اگر گروه سوم خالی بود، مقدار ۱ قرار داده شود
-            $this->setNumberOrder($optionalNumber);
-            $this->setWord($matches[1].$matches[2].$optionalNumber);
-            $description = isset($matches[4]) ? substr($matches[4], 1) : ''; // حذف ":" از ابتدای توضیحات
-            $this->setType($matches[2],$description);
-            $this->setDescription($description);
-            $this->setPattern();
-            $message = $this->getPrice().$this->getType().$this->getNumberOrder();
-            if($description)
-                $message .= ":".$this->getDescription();
-
-            $this->message = $message;
-            if ($this->pattern && preg_match($this->pattern, $message))
-                return true;
-        }
         if ($this->contact)
             return true;
 
@@ -385,28 +326,14 @@ class TextServices
 
     public function checkData()
     {
-        if (str_contains($this->data, "request_transfer_") ||
-            str_contains($this->data, "transfer_buy_") ||
-            str_contains($this->data, "trade_limit_") ||
-            str_contains($this->data, "trade_open_limit_") ||
-            str_contains($this->data, "trade_open_report_date_") ||
-            str_contains($this->data, "trade_open_report_") ||
-            str_contains($this->data, "trade_open_") ||
-            str_contains($this->data, "trade_limit_close_") ||
-            str_contains($this->data, "next_worker_") ||
-            str_contains($this->data, "pre_worker_") ||
-            str_contains($this->data, "rule_accept"))
+        if (str_contains($this->data, "rule_accept"))
             return true;
         return false;
     }
 
     public function checkCache()
     {
-        if (is_array($this->message_cache) && str_contains(data_get($this->message_cache, "title"), "trade_number_limit"))
-            return true;
-        elseif (str_contains($this->message_cache, "trade_open_limit_"))
-            return true;
-        elseif (str_contains($this->message_cache, "add_customer_"))
+        if (str_contains($this->message_cache, "add_customer_"))
             return true;
         elseif (str_contains($this->message_cache, "add_fullName"))
             return true;
@@ -473,27 +400,15 @@ class TextServices
             return $this->checkWord();
 
         switch ($this->message) {
-            case 'ن':
-            case 'نشد':
-            case 'کنسل':
-                if ($this->rejectAll())
-                    $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'لفظ های شما کنسل شد']);
-                break;
             case "منو":
                 $keyboard_menu = $this->setMenu();
                 $response = TelegramServices::menu($this->telegram, $keyboard_menu, $this->getUser(), "بازگشت به منو اصلی");
-
                 break;
-            case "\xF0\x9F\x91\xA5معرفی مشتری":
-            case "\xF0\x9F\x93\x88معاملات باز":
-            case "\xF0\x9F\x93\x8Bلیست همکاران":
+            case "\xF0\x9F\x8E\xABخرید بلیط":
+            case "\xF0\x9F\x92\xB3کیف پول":
+            case "پروفایل\xF0\x9F\x91\xA4":
             case "\xF0\x9F\x93\x9Aقوانین":
             case "راهنما\xE2\x81\x89":
-            case "\xF0\x9F\x92\xB3حق اشتراک":
-            case "\xE2\x8C\x9Bمدت اشتراک":
-            case "\xE2\x9A\xA0\xE2\x9D\x8Cغیرفعال سازی تایید دو مرحله ای":
-            case "\xE2\x9C\x8Cفعال سازی دو مرحله ای":
-            case  "\xE2\x9D\x8Cغیر فعال فوری":
                 $this->getAction();
                 break;
             case  "/start":
@@ -516,38 +431,8 @@ class TextServices
         */
         if (!$this->checkData())
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
-        elseif (str_contains($this->getData(), "pre_worker_")) {
-            $page = str_replace('pre_worker_', '', $this->getData());
-            $message_id = cache()->get("menu_List_worker_" . $this->getUserId());
-            if ($message_id)
-                $this->listWorker($page, $message_id);
-        } elseif (str_contains($this->getData(), "next_worker_")) {
-            $page = (int)str_replace('next_worker_', '', $this->getData());
-            $message_id = cache()->get("menu_List_worker_" . $this->getUserId());
-
-            if ($message_id)
-                $this->listWorker($page, $message_id);
-        } elseif (str_contains($this->data, "request_transfer_"))
-            $this->requestTransfer();
         elseif (str_contains($this->data, "rule_accept"))
             $this->ruleAccept();
-        elseif (str_contains($this->data, "transfer_buy_"))
-            $this->transferBuy();
-        elseif (str_contains($this->data, "trade_limit_open_"))
-            $this->tradeLimitOpen();
-        elseif (str_contains($this->data, "trade_limit_close_"))
-            $this->tradeLimitClose();
-        elseif (str_contains($this->data, "trade_limit_"))
-            $this->tradeLimit();
-        elseif (str_contains($this->data, "trade_open_limit_"))
-            $this->tradeOpenLimit();
-        elseif (str_contains($this->data, "trade_open_report_date_"))
-            $this->tradeOpenReportDate();
-        elseif (str_contains($this->data, "trade_open_report_"))
-            $this->tradeOpenReport();
-        elseif (str_contains($this->data, "trade_open_"))
-            $this->tradeOpen();
-
     }
 
     public function actionByCache()
@@ -557,12 +442,6 @@ class TextServices
         */
         if (!$this->checkCache())
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
-        elseif (is_array($this->message_cache) && str_contains(data_get($this->message_cache, "title"), "trade_number_limit"))
-            $this->tradeNumberLimit();
-        elseif (str_contains($this->message_cache, "add_customer_name_"))
-            $this->addCustomerName();
-        elseif (str_contains($this->message_cache, "trade_open_limit_"))
-            $this->addCustomerLimit();
         elseif (str_contains($this->message_cache, "add_customer_mobile"))
             $this->addCustomer();
         elseif (str_contains($this->message_cache, "add_mobile"))
@@ -581,7 +460,7 @@ class TextServices
     private function getAction()
     {
         switch ($this->message) {
-            case "\xF0\x9F\x91\xA5معرفی مشتری":
+            case "\xF0\x9F\x8E\xABخرید بلیط":
                 $text = "موبایل مشتری خود را وارد کنید با کد کشور بدون صفر مثل ";
                 $text .= "\n\n";
                 $text .= '+989120001122';
@@ -591,8 +470,6 @@ class TextServices
                 $text .= '+442071838750';
                 $text .= "\n\n";
                 $this->telegram_services->sendMessage($this->user_id, $text);
-                cache()->set($this->key_cache . $this->getUserId(), "add_customer_mobile");
-
                 break;
             case "\xF0\x9F\x93\x88معاملات باز":
                 cache()->forget("trade_open_" . $this->user_id);

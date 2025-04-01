@@ -3,31 +3,8 @@
 namespace App\Services;
 
 
-use App\Jobs\DeactivateTransfer;
-use App\Jobs\DeactivateWord;
-use App\Jobs\PartiesToTheTransaction;
-use App\Jobs\SendAcceptWordAccounting;
-use App\Jobs\SendAcceptWordPublicChannel;
-use App\Jobs\SendMessageAccountingBot;
-use App\Models\AccessBot;
-use App\Models\Bot;
-use App\Models\CustomerUser;
-use App\Models\DailyRequestTransfer;
-use App\Models\MessageTelegram;
-use App\Models\MessageWordPublic;
-use App\Models\RequestTransfer;
-use App\Models\Setting;
-use App\Models\Transfer;
-use App\Models\UglyWord;
-use App\Models\UserTelegram;
-use App\Models\UserTradeAccess;
-use App\Models\WordTelegram;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Telegram\Bot\Api;
-use Telegram\Bot\FileUpload\InputFile;
+
+use Apachish\Dabelna\App\Models\AccessBot;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class ActionServices extends TextServices
@@ -41,88 +18,6 @@ class ActionServices extends TextServices
         parent::__construct($token);
 
     }
-
-    public function addCustomerLimit()
-    {
-        $customer_id = str_replace('trade_open_limit_', '', $this->getMessageCache());
-
-        if ($customer_id) {
-            $customer = CustomerUser::find($customer_id);
-            $customer->limit = (int)$this->getMessage();
-            $customer->update();
-            $message = "اطلاعات مشتری ثبت شد";
-            $message .= "\n";
-            $message .= "نام و نام خانوادگی:";
-            $message .= $customer->fullName;
-            $message .= "\n";
-            $message .= "شماره همراه:";
-            $message .= $customer->mobile;
-            $message .= "\n";
-            $message .= "حد مجاز معامله ";
-            $message .= "\n";
-            $message .= $customer->limit;
-
-            $this->telegram_services->sendMessage($this->getUserId(), $message);
-            cache()->forget($this->getKeyCache() . $this->getUserId());
-            cache()->forget("trade_open_" . $this->getUserId());
-
-
-        } else {
-            $this->telegram_services->sendMessage($this->getUserId(), "اطلاعات وارد شده مشکل دارد با ادمین سیستم تماس حاصل فرمایید یا مجددا معرفی مشتری بزنید");
-
-        }
-    }
-
-    public function addCustomerName()
-    {
-        $mobile = str_replace('add_customer_name_', '', $this->getMessageCache());
-        $fullName = $this->getMessage();
-
-        if ($fullName && $mobile) {
-            CustomerUser::updateOrCreate(["user_id" => $this->getUserId(), "mobile" => $mobile],
-                [
-                    "fullName" => $fullName,
-                ]);
-            $message = $fullName;
-            $message .= "\n";
-            $message = "پس از تایید مدیریت به لیست مشتریان شما اضافه خواهد شد ";
-            $message .= "\n";
-            $this->telegram_services->sendMessage($this->getUserId(), $message);
-            cache()->forget($this->getKeyCache() . $this->getUserId());
-
-
-        } else {
-            $this->telegram_services->sendMessage($this->getUserId(), "اطلاعات وارد شده مشکل دارد با ادمین سیستم تماس حاصل فرمایید یا مجددا معرفی مشتری بزنید");
-
-        }
-    }
-
-    public function addCustomer()
-    {
-        $pattern = '/^\+\d{1,3}\d{4,14}(?:x.+)?$/';
-        $message = "شماره موبایل وارد شده نامعتبر می باشد ";
-        // بررسی اینکه شماره موبایل با الگو مطابقت دارد یا خیر
-        if (preg_match($pattern, $this->getMessage())) {
-            $check = CustomerUser::where("mobile", $this->getMessage())
-                ->where("user_id", "!=", $this->getUserId())
-                ->first();
-            // الگوی regex برای بررسی شماره موبایل با کد کشور
-
-
-            if (!$check) {
-                cache()->set($this->getKeyCache() . $this->getUserId(), "add_customer_name_" . $this->getMessage());
-                $message = "نام مستعار مشتری خود را وارد کنید";
-            } else {
-                $message = "مشتری با این شماره تلفن امکان ثبت نمی باشد";
-                cache()->forget($this->getKeyCache() . $this->getUserId());
-            }
-        }
-
-        $this->telegram_services->sendMessage($this->getUserId(), $message);
-
-
-    }
-
     public function addMobile()
     {
 
@@ -130,7 +25,6 @@ class ActionServices extends TextServices
         if ($mobile) {
             $this->getUser()->mobile = $mobile;
             $this->getUser()->update();
-            $this->setBotAdmin();
             $keyboard[] = [
                 ["text" => "تایید", "callback_data" => "ok_user_" . $this->getUserId()],
                 ["text" => "رد", "callback_data" => "reject_user_" . $this->getUserId()]
