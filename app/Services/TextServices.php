@@ -368,6 +368,13 @@ class TextServices
         if (!$this->checkText())
             return $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
 
+        logger("TextTelegram",[
+            "update_id" => data_get($this->update, 'update_id'),
+            "message_id" => data_get($this->update, 'message.message_id'),
+            "user_telegram_id" => $this->user->id,
+            "text" => data_get($this->update, 'message.text'),
+            "data" => json_encode($this->update)
+        ]);
         TextTelegram::create([
             "update_id" => data_get($this->update, 'update_id'),
             "message_id" => data_get($this->update, 'message.message_id'),
@@ -465,8 +472,9 @@ class TextServices
                 cache()->set("trade_open_" . $this->user_id, $message_id);
                 break;
             case "\xF0\x9F\x93\x9Aقوانین":
-                $help = Setting::where("key", "rule")->where("status",true)->first();
-                $this->telegram_services->sendMessage($this->user_id, $help->value);
+                $rule = Setting::where("key", "rule")->where("status",true)->first();
+                if($rule)
+                    $this->telegram_services->sendMessage($this->user_id, $rule->value);
                 break;
 
             case "راهنما\xE2\x81\x89":
