@@ -12,12 +12,6 @@ use Telegram\Bot\Api;
 class TextServices
 {
 
-    private $type;
-    private $price;
-
-    private $number_order;
-    private $description;
-
     private $type_message;
 
     protected $message;
@@ -34,8 +28,6 @@ class TextServices
 
     public $message_menu = "خوش آمدید";
 
-    private $pattern;
-
     public $telegram_services;
 
     private $token;
@@ -48,7 +40,6 @@ class TextServices
 
     private $key_cache;
     private $contact;
-    private $word;
 
     public function __construct($token)
     {
@@ -314,7 +305,6 @@ class TextServices
             "\xF0\x9F\x93\x9Aقوانین",
             "راهنما\xE2\x81\x89",
             "قوانین را خواندم و آنها را پذیرفتم",
-            "راهنما را خواندم و یاد گرفتم",
         ];
         if (in_array($this->message, $accept))
             return true;
@@ -333,9 +323,7 @@ class TextServices
 
     public function checkCache()
     {
-        if (str_contains($this->message_cache, "add_customer_"))
-            return true;
-        elseif (str_contains($this->message_cache, "add_fullName"))
+        if (str_contains($this->message_cache, "add_fullName"))
             return true;
         elseif (str_contains($this->message_cache, "add_mobile"))
             return true;
@@ -348,10 +336,6 @@ class TextServices
     {
         if ($this->getMessage() == "قوانین را خواندم و آنها را پذیرفتم") {
             $this->ruleAccept();
-            return true;
-        }
-        if ($this->getMessage() == "راهنما را خواندم و یاد گرفتم") {
-            $this->helpAccept();
             return true;
         }
         if (!$this->user->fullName) {
@@ -487,89 +471,17 @@ class TextServices
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, "شخص مورد نظر را انتخاب کنید", $keyboard);
                 cache()->set("trade_open_" . $this->user_id, $message_id);
                 break;
-
-            case "\xF0\x9F\x93\x8Bلیست همکاران":
-                $this->listWorker();
-                break;
-
             case "\xF0\x9F\x93\x9Aقوانین":
-                $help = Setting::where("key", "rule")->first();
+                $help = Setting::where("key", "rule")->where("status",true)->first();
                 $this->telegram_services->sendMessage($this->user_id, $help->value);
                 break;
 
             case "راهنما\xE2\x81\x89":
-                $help = Setting::where("key", "help")->first();
+                $help = Setting::where("key", "help")->where("status",true)->first();
                 $this->telegram_services->sendMessage($this->user_id, $help->value);
 
                 break;
-            case "\xE2\x8C\x9Bمدت اشتراک":
-//                $help = Setting::where("key", "membership")->first();
-                if ($this->getUser()->memberShip) {
-                    $message = "تاریخ پایان اشتراک شما:";
-                    $message .= "\n\n";
-                    $message .= toJalali($this->getUser()->memberShip->expiration_date, "Y/d/m");
-                } else {
-                    $message = "خدمات تا اطلاع ثانوی 😍 رایگان 😍 میباشد";
-                }
-                $this->telegram_services->sendMessage($this->user_id, $message);
 
-                break;
-            case "\xF0\x9F\x92\xB3حق اشتراک":
-                $help = Setting::where("key", "membership")->first();
-                if ($help)
-                    $this->telegram_services->sendMessage($this->user_id, $help->value);
-
-                break;
-
-            case "\xE2\x9A\xA0\xE2\x9D\x8Cغیرفعال سازی تایید دو مرحله ای":
-                $this->user->verify_two = null;
-                $this->user->change_menu = true;
-                $this->user->update();
-                $keyboard_menu = $this->setMenu();
-                $this->message_menu = "تایید دو مرحله ای غیر فعال شد";
-                $this->menu($keyboard_menu, $this->user->status, $this->user);
-                break;
-
-            case "\xE2\x9C\x8Cفعال سازی دو مرحله ای":
-                $this->user->verify_two = now();
-                $this->user->change_menu = true;
-
-                $this->user->update();
-                $keyboard_menu = $this->setMenu();
-                $this->message_menu = "تایید دو مرحله ای  فعال شد";
-                $this->menu($keyboard_menu, $this->user->status, $this->user);
-                break;
-
-            case  "\xE2\x9D\x8Cغیر فعال فوری":
-                if (!cache()->get("disable_immediately_" . $this->getUserId())) {
-                    cache()->set("disable_immediately_" . $this->getUserId(), 1, now()->addSecond(5));
-                    return true;
-                }
-                cache()->forget("disable_immediately_" . $this->getUserId());
-                try {
-                    // خارج کردن کاربر از کانال
-                    $response = $this->telegram->kickChatMember(
-                        [
-                            'chat_id' => $this->bot->chanel_id,
-                            'user_id' => $this->user->telegram_id,
-                        ]);
-
-                    if ($response) {
-                        logger("User has been successfully removed from the channel.");
-                    } else {
-                        logger("Failed to remove user from the channel.");
-                    }
-                } catch (\Exception $e) {
-                    logger("Error: " . $e->getMessage());
-                }
-                $this->user->status = false;
-                $this->user->change_menu = true;
-                $this->user->update();
-                $this->telegram_services->deleteKeyboard($this->user->id, "مواظب خودت باش");
-                $this->user->delete();
-                cache()->forget("keyword_menu" . $this->getKeyCache() . $this->user->id);
-                $this->menu([], false);
-                break;
             default:
                 return false;
         }
@@ -634,12 +546,4 @@ class TextServices
 
         return false;
     }
-
-    protected function convertNumber($value)
-    {
-        $western = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
-        $eastern = ['۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹', '۰'];
-        return str_replace($eastern, $western, $value);
-    }
-
 }
