@@ -334,11 +334,11 @@ class TextServices
 
     public function actionByMessage()
     {
+        logger("user",[$this->user]);
         if ($this->getMessage() == "قوانین را خواندم و آنها را پذیرفتم") {
             $this->ruleAccept();
             return true;
-        }
-        if (!$this->user->fullName) {
+        }elseif (!$this->user->fullName) {
             $text = " لطفا نام و نام خانوادگی خود را وارد نمایید";
             cache()->set($this->key_cache . $this->user_id, "add_fullName");
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => $text]);
@@ -364,9 +364,6 @@ class TextServices
         }
 
 
-        /*
-       * check message
-       */
 
         cache()->forget($this->key_cache . $this->user_id);
 
@@ -380,8 +377,6 @@ class TextServices
             "text" => data_get($this->update, 'message.text'),
             "data" => json_encode($this->update)
         ]);
-        if ($this->pattern && preg_match($this->pattern, $this->message))
-            return $this->checkWord();
 
         switch ($this->message) {
             case "منو":
