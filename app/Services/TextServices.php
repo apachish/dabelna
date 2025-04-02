@@ -351,14 +351,12 @@ class TextServices
 
         } elseif (!$this->user->accept_rule) {
             $text = "لطفا قوانین را مطالعه فرمایید";
-            $rule = Setting::where("key", "rule")->first();
+            $rule = Setting::where("key", "rule")->where("status",true)->first();
 
             $text .= $rule ? $rule->value : "";
             $keyboard[0][0] = ['text' => "قوانین را خواندم و آنها را پذیرفتم"];
             TelegramServices::menu($this->telegram, $keyboard, $this->getUser(), $text);
             cache()->forget($this->getKeyCache() . $this->getUserId());
-//            $menu = $this->getTelegramServices()->MessageReplyMarkup($this->getTelegram(), $this->getUserId(), $text, $keyboard);
-//            cache()->set("rule_accept". $this->user_id,$menu);
             return true;
 
         }

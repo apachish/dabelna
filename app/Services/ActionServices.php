@@ -72,6 +72,11 @@ class ActionServices extends TextServices
     public function ruleAccept()
     {
         $this->getUser()->update(["accept_rule" => now()->format("Y-m-d H:i")]);
+        $this->getUser()->change_menu = true;
+        $this->getUser()->update();
+        $keyboard_menu = $this->setMenu();
+        $this->message_menu = "خوش آمدید، از این لحظه منو کاربری فعال شد";
+        $this->menu($keyboard_menu, $this->getUser()->status, $this->getUser());
     }
 
 
