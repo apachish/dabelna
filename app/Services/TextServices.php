@@ -207,7 +207,7 @@ class TextServices
      */
     public function setMessage(): void
     {
-        $this->message = isset($this->update['message']['text']) ? cleanInput($this->convertNumber($this->update['message']['text'])) : null;
+        $this->message = isset($this->update['message']['text']) ? convertNumber($this->update['message']['text']) : null;
     }
 
     /**
@@ -285,7 +285,7 @@ class TextServices
     public function setContact(): void
     {
         if (isset($this->update['message']['contact']["phone_number"])) {
-            $this->contact = $this->convertNumber($this->update['message']['contact']["phone_number"]);
+            $this->contact = convertNumber($this->update['message']['contact']["phone_number"]);
             if (!str_contains($this->contact, "+"))
                 $this->contact = "+" . $this->contact;
         }
