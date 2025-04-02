@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "29c0a354a5b7ab35da2df7eb94336682",
+    "content-hash": "6b6e8c8b6a06386f89629189f348379c",
     "packages": [
         {
             "name": "amphp/amp",
@@ -1887,7 +1887,7 @@
             "dist": {
                 "type": "path",
                 "url": "../dabelna-pakage",
-                "reference": "ecdec50434b91281d37efa41c58c34c336ed35c0"
+                "reference": "a0fe18ebea1515a283bbb7078ee61336ed33434b"
             },
             "type": "library",
             "extra": {
@@ -1968,6 +1968,41 @@
             "time": "2024-10-01T13:55:55+00:00"
         },
         {
+            "name": "balea/holiday",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "../Holiday",
+                "reference": "b8907a920314e96dcb83757b179bce8f116e3d69"
+            },
+            "require": {
+                "imangazaliev/didom": "v1.*"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Balea\\Holiday\\HolidayServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Balea\\Holiday\\": "src/"
+                }
+            },
+            "authors": [
+                {
+                    "name": "shahriar pahlevansadegh",
+                    "email": "info@apachish.ir"
+                }
+            ],
+            "description": "package get holiday in iran",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "barryvdh/laravel-dompdf",
             "version": "v3.1.1",
             "source": {
@@ -2043,6 +2078,73 @@
                 }
             ],
             "time": "2025-02-13T15:07:54+00:00"
+        },
+        {
+            "name": "beberlei/assert",
+            "version": "v3.3.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/beberlei/assert.git",
+                "reference": "b5fd8eacd8915a1b627b8bfc027803f1939734dd"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/beberlei/assert/zipball/b5fd8eacd8915a1b627b8bfc027803f1939734dd",
+                "reference": "b5fd8eacd8915a1b627b8bfc027803f1939734dd",
+                "shasum": ""
+            },
+            "require": {
+                "ext-ctype": "*",
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "ext-simplexml": "*",
+                "php": "^7.1 || ^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "*",
+                "phpstan/phpstan": "*",
+                "phpunit/phpunit": ">=6.0.0",
+                "yoast/phpunit-polyfills": "^0.1.0"
+            },
+            "suggest": {
+                "ext-intl": "Needed to allow Assertion::count(), Assertion::isCountable(), Assertion::minCount(), and Assertion::maxCount() to operate on ResourceBundles"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "lib/Assert/functions.php"
+                ],
+                "psr-4": {
+                    "Assert\\": "lib/Assert"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Benjamin Eberlei",
+                    "email": "kontakt@beberlei.de",
+                    "role": "Lead Developer"
+                },
+                {
+                    "name": "Richard Quadling",
+                    "email": "rquadling@gmail.com",
+                    "role": "Collaborator"
+                }
+            ],
+            "description": "Thin assertion library for input validation in business models.",
+            "keywords": [
+                "assert",
+                "assertion",
+                "validation"
+            ],
+            "support": {
+                "issues": "https://github.com/beberlei/assert/issues",
+                "source": "https://github.com/beberlei/assert/tree/v3.3.3"
+            },
+            "time": "2024-07-15T13:18:35+00:00"
         },
         {
             "name": "brick/math",
@@ -4089,6 +4191,58 @@
             "time": "2025-02-03T10:55:03+00:00"
         },
         {
+            "name": "imangazaliev/didom",
+            "version": "1.18",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Imangazaliev/DiDOM.git",
+                "reference": "346db1ea94a0f6ead225c2358af770bf33659cf7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Imangazaliev/DiDOM/zipball/346db1ea94a0f6ead225c2358af770bf33659cf7",
+                "reference": "346db1ea94a0f6ead225c2358af770bf33659cf7",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "ext-iconv": "*",
+                "php": ">=5.4"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DiDom\\": "src/DiDom/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Imangazaliev Muhammad",
+                    "email": "imangazalievm@gmail.com"
+                }
+            ],
+            "description": "Simple and fast HTML parser",
+            "homepage": "https://github.com/Imangazaliev/DiDOM",
+            "keywords": [
+                "didom",
+                "html",
+                "parser",
+                "xml"
+            ],
+            "support": {
+                "issues": "https://github.com/Imangazaliev/DiDOM/issues",
+                "source": "https://github.com/Imangazaliev/DiDOM/tree/1.18"
+            },
+            "time": "2021-07-27T18:50:53+00:00"
+        },
+        {
             "name": "irazasyed/telegram-bot-sdk",
             "version": "v3.15.0",
             "source": {
@@ -4231,16 +4385,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.4.1",
+            "version": "v12.5.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "cdefd852ecb459a65392cd6ccb578c92a15b8e2b"
+                "reference": "0ab4791b2c5f405f8728e4481265599803564c02"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/cdefd852ecb459a65392cd6ccb578c92a15b8e2b",
-                "reference": "cdefd852ecb459a65392cd6ccb578c92a15b8e2b",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/0ab4791b2c5f405f8728e4481265599803564c02",
+                "reference": "0ab4791b2c5f405f8728e4481265599803564c02",
                 "shasum": ""
             },
             "require": {
@@ -4442,7 +4596,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-03-30T16:27:26+00:00"
+            "time": "2025-04-01T14:40:42+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -5455,27 +5609,27 @@
         },
         {
             "name": "mongodb/laravel-mongodb",
-            "version": "5.2.0",
+            "version": "5.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mongodb/laravel-mongodb.git",
-                "reference": "e2a068a0deca28e55181f29d0d6799ecbdf8e52e"
+                "reference": "583200745cd698ad03ae0025aa928f84c64fc6e8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mongodb/laravel-mongodb/zipball/e2a068a0deca28e55181f29d0d6799ecbdf8e52e",
-                "reference": "e2a068a0deca28e55181f29d0d6799ecbdf8e52e",
+                "url": "https://api.github.com/repos/mongodb/laravel-mongodb/zipball/583200745cd698ad03ae0025aa928f84c64fc6e8",
+                "reference": "583200745cd698ad03ae0025aa928f84c64fc6e8",
                 "shasum": ""
             },
             "require": {
                 "composer-runtime-api": "^2.0.0",
-                "ext-mongodb": "^1.21",
+                "ext-mongodb": "^1.21|^2",
                 "illuminate/cache": "^10.36|^11|^12",
                 "illuminate/container": "^10.0|^11|^12",
                 "illuminate/database": "^10.30|^11|^12",
                 "illuminate/events": "^10.0|^11|^12",
                 "illuminate/support": "^10.0|^11|^12",
-                "mongodb/mongodb": "^1.21",
+                "mongodb/mongodb": "^1.21|^2",
                 "php": "^8.1",
                 "symfony/http-foundation": "^6.4|^7"
             },
@@ -5553,9 +5707,9 @@
             "support": {
                 "issues": "https://www.mongodb.com/support",
                 "security": "https://www.mongodb.com/security",
-                "source": "https://github.com/mongodb/laravel-mongodb/tree/5.2.0"
+                "source": "https://github.com/mongodb/laravel-mongodb/tree/5.2.1"
             },
-            "time": "2025-03-03T14:08:36+00:00"
+            "time": "2025-04-01T11:36:48+00:00"
         },
         {
             "name": "mongodb/mongodb",
@@ -5735,6 +5889,71 @@
                 }
             ],
             "time": "2025-03-24T10:02:05+00:00"
+        },
+        {
+            "name": "morilog/jalali",
+            "version": "v3.4.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/morilog/jalali.git",
+                "reference": "f475f4db7bd540c6abc01126e46824c897ed1e03"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/morilog/jalali/zipball/f475f4db7bd540c6abc01126e46824c897ed1e03",
+                "reference": "f475f4db7bd540c6abc01126e46824c897ed1e03",
+                "shasum": ""
+            },
+            "require": {
+                "beberlei/assert": "^3.0",
+                "nesbot/carbon": "^1.21 || ^2.0 || ^3.0",
+                "php": "^7.0 | ^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": ">4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/helpers.php"
+                ],
+                "psr-4": {
+                    "Morilog\\Jalali\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Milad Rey",
+                    "email": "miladr@gmail.com"
+                },
+                {
+                    "name": "Morteza Parvini",
+                    "email": "m.parvini@outlook.com"
+                }
+            ],
+            "description": "This Package helps developers to easily work with Jalali (Shamsi or Iranian) dates in PHP applications, based on Jalali (Shamsi) DateTime class.",
+            "keywords": [
+                "Jalali",
+                "date",
+                "datetime",
+                "laravel",
+                "morilog"
+            ],
+            "support": {
+                "issues": "https://github.com/morilog/jalali/issues",
+                "source": "https://github.com/morilog/jalali/tree/v3.4.2"
+            },
+            "funding": [
+                {
+                    "url": "https://issuehunt.io/r/morilog",
+                    "type": "issuehunt"
+                }
+            ],
+            "time": "2024-05-09T08:44:51+00:00"
         },
         {
             "name": "nesbot/carbon",
@@ -13134,7 +13353,8 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "apachish/dabelna": 20
+        "apachish/dabelna": 20,
+        "balea/holiday": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

@@ -240,7 +240,10 @@ class TelegramServices
         curl_close($ch);
 
         logger("edit message request",[json_decode($result, true)]);
-        return json_decode($result, true);
+        $response =  json_decode($result, true);
+
+        return data_get($response, "message_id");
+
     }
 
     // تابع ارسال پیام با کیبورد شیشه‌ای

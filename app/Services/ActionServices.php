@@ -79,6 +79,55 @@ class ActionServices extends TextServices
         $this->menu($keyboard_menu, $this->getUser()->status, $this->getUser());
     }
 
+    public function sendTypeCharging()
+    {
+        $message = "شما می توانید به یکی از روش های زیر حساب خود را شارژ کنید";
+        $keyboard[0] = [
+            ['text' => "افزایش ریالی", 'callback_data' => "Charging_rial_" . $this->getUser()->id],
+        ];
+        $keyboard[1] = [
+            ['text' => "افزایش تتری", 'callback_data' => "Charging_usdt_" . $this->getUser()->id],
+        ];
+        $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->getUserId(), $message, $keyboard);
+        cache()->set("sendTypeCharging_" .  $this->getUserId(), $message_id);
+    }
+
+    public function ChargingRial()
+    {
+        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
+        $text = "مبلغ مورد نظر خود را وارد کنید";
+        $keyboard = [];
+        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->forget("sendTypeCharging_" .  $this->getUserId());
+        cache()->set("ChargingRial_" .  $this->getUserId(), $message_id);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "Charging_rial" );
+    }
+
+    public function CheckPayRial()
+    {
+        $message_id = cache()->get("ChargingRial_".  $this->getUserId());
+        $amount = (int)convertNumber($this->getMessage());
+
+        $text = "مبلغ ".$amount ."می خواهید شارژ کنید در صورت تایید دکمه پرداخت را زده تا به درگاه بانک منتقل شوید";
+        $keyboard[0] = [
+            ['text' => "بازی تست", 'callback_data' => "Game_test_" . $this->getUser()->id],
+        ];
+
+        if(!data_get($this->getUser(),"national_code")){
+            $text = " برای شارژ مبلغ ". $amount. " شما باید کد ملی خود را وارد فرمایید ";
+            $keyboard = [];
+            cache()->set($this->getKeyCache() . $this->getUserId(), "add_national_code" );
+        }
+        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+
+    }
+
+    public function payRial()
+    {
+
+    }
+
+
 
     /**
      * @param mixed $number

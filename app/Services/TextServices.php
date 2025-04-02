@@ -145,7 +145,13 @@ class TextServices
      */
     public function setUser(): void
     {
-        $user_telegram = UserTelegram::where("telegram_id", $this->user_id)->withTrashed()->first();
+        $user_telegram = UserTelegram::where("telegram_id", $this->user_id)
+            ->withCount("children")
+            ->withCount("transactionsCompleted")
+            ->withCount("transactionsFailed")
+            ->withCount("transactions")
+            ->with(["Transaction","wallets"])
+            ->withTrashed()->first();
         if ($user_telegram == null && $this->user_id) {
             $update = $this->update;
             $type = $this->type_message;
@@ -316,8 +322,19 @@ class TextServices
 
     public function checkData()
     {
-        if (str_contains($this->data, "rule_accept"))
+        $keywords = [
+            "rule_accept",
+            "Charging_rial_",
+            "Charging_usdt_",
+            "Game_test_",
+            "Game_rial_",
+            "Game_usdt_",
+            "increase_in_inventory_"
+        ];
+
+        if (array_filter($keywords, fn($keyword) => str_contains($this->data, $keyword)))
             return true;
+
         return false;
     }
 
@@ -417,6 +434,10 @@ class TextServices
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
         elseif (str_contains($this->data, "rule_accept"))
             $this->ruleAccept();
+        elseif(str_contains($this->data, "increase_in_inventory_"))
+            $this->sendTypeCharging();
+        elseif(str_contains($this->data, "Charging_rial_"))
+            $this->ChargingRial();
     }
 
     public function actionByCache()
@@ -445,31 +466,40 @@ class TextServices
     {
         switch ($this->message) {
             case "\xF0\x9F\x8E\xABخرید بلیط":
-                $text = "موبایل مشتری خود را وارد کنید با کد کشور بدون صفر مثل ";
-                $text .= "\n\n";
-                $text .= '+989120001122';
-                $text .= "\n\n";
-                $text .= '+11234567890';
-                $text .= "\n\n";
-                $text .= '+442071838750';
-                $text .= "\n\n";
-                $this->telegram_services->sendMessage($this->user_id, $text);
-                break;
-            case "\xF0\x9F\x93\x88معاملات باز":
-                cache()->forget("trade_open_" . $this->user_id);
-                $worker = UserTelegram::where("agent_id", $this->getUser()->id)->get();
-                $keyboard = [];
-                $i = 0;
-                $keyboard[$i++] = [
-                    ['text' => "خودم", 'callback_data' => "trade_open_" . $this->getUser()->id],
+                $message = "شما می توانید در یکی از حالت های زیر شرکت کنید";
+                $keyboard[0] = [
+                    ['text' => "بازی تست", 'callback_data' => "Game_test_" . $this->getUser()->id],
                 ];
-                $worker->each(function ($row) use (&$i, &$keyboard) {
-                    $keyboard[$i++] = [
-                        ['text' => $row->fullName, 'callback_data' => "trade_open_" . $row->id],
-                    ];
-                });
-                $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, "شخص مورد نظر را انتخاب کنید", $keyboard);
-                cache()->set("trade_open_" . $this->user_id, $message_id);
+                $keyboard[1] = [
+                    ['text' => "بازی ریالی", 'callback_data' => "Game_rial_" . $this->getUser()->id],
+                ];
+                $keyboard[2] = [
+                    ['text' => "بازی تتری", 'callback_data' => "Game_usdt_" . $this->getUser()->id],
+                ];
+                $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+                break;
+            case "\xF0\x9F\x92\xB3کیف پول":
+                $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
+                $message .= "\n";
+                $message .= $this->getUser()->id . "🔢 ایدی عددی شما : ";
+                $message .= "\n";
+                $message .= data_get($this->getUser(),"children_count",0)."👥 تعداد زیرمجموعه ها : ";
+                $message .= "\n";
+                $message .= "🛍 تعداد بلیط خریداری شده : ";
+                $message .= "\n";
+                $message .= "👈🏻 پرداخت های موفق: ".data_get($this->getUser(),"transactions_completed_count",0). " عدد";
+                $message .= "\n";
+                $message .= "🟡 فاکتور های پرداخت نشده : ". data_get($this->getUser(),"transactions_failed_count",0)." عدد";
+                $message .= "\n";
+                $message .= "💎 موجودی شما :  تومان";
+                $message .= "\n";
+                $message .= toJalali(now(),"Y/m/d H:i:s");
+
+                $keyboard[0] = [
+                    ['text' => "افزایش موجودی", 'callback_data' => "increase_in_inventory_" . $this->getUser()->id],
+                ];
+                $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+//                cache()->set("trade_open_" . $this->user_id, $message_id);
                 break;
             case "\xF0\x9F\x93\x9Aقوانین":
                 $rule = Setting::where("key", "rule")->where("status",true)->first();
@@ -479,10 +509,10 @@ class TextServices
 
             case "راهنما\xE2\x81\x89":
                 $help = Setting::where("key", "help")->where("status",true)->first();
-                $this->telegram_services->sendMessage($this->user_id, $help->value);
+                if($help)
+                    $this->telegram_services->sendMessage($this->user_id, $help->value);
 
                 break;
-
             default:
                 return false;
         }
