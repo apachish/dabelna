@@ -151,7 +151,7 @@ class TextServices
             ->withCount("transactionsCompleted")
             ->withCount("transactionsFailed")
             ->withCount("transactions")
-            ->with(["Transaction","wallets"])
+            ->with(["Transaction","walletsRial","walletsUsdt"])
             ->withTrashed()->first();
         if ($user_telegram == null && $this->user_id) {
             $update = $this->update;
@@ -503,9 +503,16 @@ class TextServices
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                 break;
             case "\xF0\x9F\x92\xB3کیف پول":
+                $wallet_usdt = data_get($this->data, 'walletsUsdt');
+                $wallet_rial = data_get($this->data, 'walletsRial');
+                if($wallet_rial)
+                    $rial = $wallet_rial->sum("amount");
+                if($wallet_rial)
+                    $usdt  = $wallet_usdt->sum("amount");
+
                 $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
                 $message .= "\n";
-                $message .= $this->getUser()->id . "🔢 ایدی عددی شما : ";
+                $message .= $this->getUser()->user_id . "🔢 ایدی عددی شما : ";
                 $message .= "\n";
                 $message .= data_get($this->getUser(),"children_count",0)."👥 تعداد زیرمجموعه ها : ";
                 $message .= "\n";
@@ -515,8 +522,14 @@ class TextServices
                 $message .= "\n";
                 $message .= "🟡 فاکتور های پرداخت نشده : ". data_get($this->getUser(),"transactions_failed_count",0)." عدد";
                 $message .= "\n";
-                $message .= "💎 موجودی شما :  تومان";
+                $message .= "💎 موجودی شما :  ";
                 $message .= "\n";
+                if($rial)
+                    $message .= getPriceFormat($rial)." ریال "."\n";
+                if($usdt)
+                    $message .= getPriceFormat($usdt)." تتر "."\n";
+
+
                 $message .= toJalali(now(),"Y/m/d H:i:s");
 
                 $keyboard[0] = [
