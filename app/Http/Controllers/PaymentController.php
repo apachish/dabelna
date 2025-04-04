@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use Apachish\Dabelna\App\Models\Bot;
+use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use Apachish\Dabelna\App\Models\Wallet;
 use Illuminate\Http\Request;
+use Telegram\Bot\Api;
 
 class PaymentController extends Controller
 {
@@ -46,7 +50,13 @@ class PaymentController extends Controller
             if (empty($result['errors'])) {
                 if ($result['data']['code'] == 100) {
                     $this->setApachish($user_id,$amount,$result['data']["authority"]);
-//                    dd('Location: https://www.zarinpal.com/pg/StartPay/' . $result['data']["authority"]);
+                    Transaction::create([
+                        "user_id"=>$user_id,
+                        "payment_method"=>"gateway",
+                        "amount"=>$amount,
+                        "status"=>"pending",
+                        "data"=>$result['data']["authority"],
+                    ]);
                     return redirect()->away('https://www.zarinpal.com/pg/StartPay/' . $result['data']["authority"]);
                 }
             } else {
@@ -106,9 +116,50 @@ class PaymentController extends Controller
 
     }
 
-    public function verification()
+    public function verification(Request $request,$authority)
     {
+        $result = $request->get("result");
+        $transaction_apachish = $request->get("transaction");
+        $error = $request->get("error");
+        $transaction = Transaction::with("user")->where("data",$authority)->first();
+        $bot = Bot::where("title",'DabernaGameBot')->first();
+        if($transaction){
+            if($transaction_apachish){
+                if(data_get($transaction_apachish,"status") ==  "successful"){
+                    $transaction->status = "completed";
+                    $transaction->update();
+                    $ref_id = data_get($result,'data.ref_id');
+                    $wallet = Wallet::create([
+                        "user_id"=>data_get($transaction,'user_id'),
+                        "amount"=>data_get($transaction,'amount'),
+                        "type"=>Wallet::TYPE_RIAL,
+                        "type_amount"=>Wallet::TYPE_AMOUNT_DEPOSIT,
+                        "status"=>Wallet::STATUS_CONFIRMATION,
+                        "description"=>$transaction_apachish,
+                        "ref_id"=>$ref_id,
+                    ]);
+                    if($bot){
+                        $this->telegram = new Api(data_get($bot,"token"));
+                        $text = "✅ حساب شما به مبلغ";
+                        $text .= data_get($transaction,'amount');
+                        $text .= "شارژ شد";
+                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"user_id"), 'text' => $text]);
+                    }
 
+
+                }else{
+                    $transaction->status = "failed";
+                    $transaction->update();
+                    if($bot){
+                        $this->telegram = new Api(data_get($bot,"token"));
+                        $text = "❌ حساب شما به مبلغ";
+                        $text .= data_get($transaction,'amount');
+                        $text .= "موفق به پرداخت نشد";
+                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"user_id"), 'text' => $text]);
+                    }
+                }
+            }
+        }
     }
 
 }

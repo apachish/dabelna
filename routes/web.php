@@ -9,5 +9,5 @@ Route::get('/', function () {
 
 Route::controller(\App\Http\Controllers\PaymentController::class)->group(function () {
     Route::get('/payment/{user_id}/{amount}', 'goGateway');
-    Route::get('/payment/verification', 'verification');
+    Route::get('/payment/verification/{authority}', 'verification');
 });
