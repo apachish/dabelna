@@ -95,7 +95,7 @@ class ActionServices extends TextServices
     public function ChargingRial()
     {
         $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
-        $text = "مبلغ مورد نظر خود را وارد کنید";
+        $text = "📌 جهت افزایش اعتبار کیف پول مبلغ مورد نظر را به ریال ارسال کنید";
         $keyboard = [];
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
         cache()->forget("sendTypeCharging_" .  $this->getUserId());
@@ -103,28 +103,106 @@ class ActionServices extends TextServices
         cache()->set($this->getKeyCache() . $this->getUserId(), "Charging_rial" );
     }
 
-    public function CheckPayRial()
+    public function checkPayRial()
     {
         $message_id = cache()->get("ChargingRial_".  $this->getUserId());
         $amount = (int)convertNumber($this->getMessage());
 
         $text = "مبلغ ".$amount ."می خواهید شارژ کنید در صورت تایید دکمه پرداخت را زده تا به درگاه بانک منتقل شوید";
         $keyboard[0] = [
-            ['text' => "بازی تست", 'callback_data' => "Game_test_" . $this->getUser()->id],
+            ['text' => "انتقال به درگاه بانک", 'url' => route("payment",["user_id"=>$this->getUserId(),"amount"=>$amount])],
         ];
 
-        if(!data_get($this->getUser(),"national_code")){
+        if(false && !data_get($this->getUser(),"national_code")){
             $text = " برای شارژ مبلغ ". $amount. " شما باید کد ملی خود را وارد فرمایید ";
             $keyboard = [];
+            cache()->forget("ChargingRial_" .  $this->getUserId());
             cache()->set($this->getKeyCache() . $this->getUserId(), "add_national_code" );
         }
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->set("checkPayRial_" .  $this->getUserId(), $message_id);
 
+    }
+
+    public function addNationalCode()
+    {
+        $message_id = cache()->get("checkPayRial_".  $this->getUserId());
+
+        $national_code = (int)convertNumber($this->getMessage());
+
+        if(checkMelliCode($national_code)){
+
+            cache()->set("ChargingRial_" .  $this->getUserId(), $message_id);
+            cache()->set($this->getKeyCache() . $this->getUserId(), "Charging_rial" );
+        }
     }
 
     public function payRial()
     {
 
+    }
+
+    public function ChargingUsdt()
+    {
+        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
+        $text = "📌 جهت افزایش اعتبار کیف پول مبلغ مورد نظر را به تتر ارسال کنید";
+        $keyboard = [];
+        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->forget("sendTypeCharging_" .  $this->getUserId());
+        cache()->set("ChargingUsdt_" .  $this->getUserId(), $message_id);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "charging_usdt" );
+    }
+
+    public function checkPayUsdt()
+    {
+        $message_id = cache()->get("ChargingUsdt_".  $this->getUserId());
+        $amount = (int)convertNumber($this->getMessage());
+
+        $text = "✅ لطفا مبلغ ";
+        $text .= $amount;
+        $text .= "تتر را از طریق کیف پول زیر پرداخت کنید"."\n";
+        $text .="👈 کاربر گرامی :"."\n";
+        $text .="🏷 لطفا عکس رسید واریزی ارسال کنید تا حساب شما شارژ شود ، از ارسال رسید فیک خودداری کنید."."\n";
+        $text .= "✅ تایید رسید واریزی از 10 دقیقه الی 12 ساعت.  (صبور باشید!)"."\n";
+        $text .= "❗️در صورت خطا برای انتقال به پشتیبانی پیام دهید"."\n";
+        $text .= "کیف پول:"."\n";
+        $text .= env("WALLET_USDT")."\n";
+        $text .= "❗️❗️❗️❗️❗️"."\n";
+        $text .= "لطفا  در واریز خود دقت فرمایید ❤️"."\n";
+        $text .= "1: حتما حتما گزینه پرداخت کردم | ارسال رسید رو بزنید و بعدش رسیدتون رو ارسال کنید تا برامون بیاد!"."\n";
+        $text .= "⏳ نکته این تراکنش فقط تا 15 دقیقه مهلت پرداخت دارد"."\n";
+
+        $keyboard[0] = [
+            ['text' => "✅ پرداخت کردم ارسال رسید", 'callback_data' => "get_payment_receipt_" . $this->getUser()->id],
+        ];
+
+        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->set("checkPayUsdt_" .  $this->getUserId(), $message_id);
+
+    }
+
+    public function getPaymentReceipt()
+    {
+        $message_id = cache()->get("checkPayUsdt_" .  $this->getUserId());
+        $token = data_get($this->bot,"token");
+        $apiURL = "https://api.telegram.org/bot".$token;
+        $chat_id = data_get($this->getData(),"chat.id");
+
+        $file_id = data_get($this->getPhoto(),"file_id");
+
+        // دریافت اطلاعات فایل
+        $file_info = file_get_contents("$apiURL/getFile?file_id=$file_id");
+        $file_info = json_decode($file_info, true);
+
+        if (isset($file_info["result"]["file_path"])) {
+            $file_path = $file_info["result"]["file_path"];
+            $file_url = "https://api.telegram.org/file/bot$token/$file_path";
+            $text = "✅ رسید شما ارسال شد لطفا صبور باشید تا بررسی شود$file_url";
+            // ارسال لینک عکس به کاربر
+            file_get_contents("$apiURL/sendMessage?chat_id=$chat_id&text=");
+            $keyboard = [];
+            $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        }
     }
 
 

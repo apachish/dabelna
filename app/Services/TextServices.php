@@ -15,6 +15,7 @@ class TextServices
     private $type_message;
 
     protected $message;
+    protected $photo;
 
     private $message_cache;
 
@@ -214,6 +215,19 @@ class TextServices
     public function setMessage(): void
     {
         $this->message = isset($this->update['message']['text']) ? convertNumber($this->update['message']['text']) : null;
+    }
+
+    public function getPhoto()
+    {
+        return $this->photo;
+    }
+
+    /**
+     * @param mixed $message
+     */
+    public function setPhoto(): void
+    {
+        $this->photo = isset($this->update['message']['photo']) ? convertNumber($this->update['message']['photo']) : null;
     }
 
     /**
@@ -438,6 +452,10 @@ class TextServices
             $this->sendTypeCharging();
         elseif(str_contains($this->data, "Charging_rial_"))
             $this->ChargingRial();
+        elseif(str_contains($this->data, "Charging_usdt_"))
+            $this->ChargingUsdt();
+        elseif(str_contains($this->data, "get_payment_receipt_"))
+            $this->getPaymentReceipt();
     }
 
     public function actionByCache()
@@ -447,6 +465,12 @@ class TextServices
         */
         if (!$this->checkCache())
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
+        elseif (str_contains($this->message_cache, "add_national_code"))
+            $this->addNationalCode();
+        elseif (str_contains($this->message_cache, "Charging_rial"))
+            $this->checkPayRial();
+        elseif (str_contains($this->message_cache, "charging_usdt"))
+            $this->checkPayRial();
         elseif (str_contains($this->message_cache, "add_customer_mobile"))
             $this->addCustomer();
         elseif (str_contains($this->message_cache, "add_mobile"))

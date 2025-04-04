@@ -19,6 +19,7 @@ class TelegramController extends Controller
             $text_services->setKeyCache($key_cache);
             $text_services->setData();
             $text_services->setMessage();
+            $text_services->setPhoto();
             $text_services->setContact();
             $text_services->setMessageCache();
             $text_services->setUser();
