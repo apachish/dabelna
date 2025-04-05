@@ -354,12 +354,17 @@ class TextServices
 
     public function checkCache()
     {
-        if (str_contains($this->message_cache, "add_fullName"))
+        $keywords = [
+            "add_fullName",
+            "add_mobile",
+            "pending_accept",
+            "Charging_rial",
+            "charging_usdt"
+        ];
+
+        if (array_filter($keywords, fn($keyword) => str_contains($this->message_cache, $keyword)))
             return true;
-        elseif (str_contains($this->message_cache, "add_mobile"))
-            return true;
-        elseif (str_contains($this->message_cache, "pending_accept"))
-            return true;
+
         return false;
     }
 
