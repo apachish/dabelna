@@ -505,6 +505,8 @@ class TextServices
             case "\xF0\x9F\x92\xB3کیف پول":
                 $wallet_usdt = data_get($this->data, 'walletsUsdt');
                 $wallet_rial = data_get($this->data, 'walletsRial');
+                $rial = 0;
+                $usdt = 0;
                 if($wallet_rial)
                     $rial = $wallet_rial->sum("amount");
                 if($wallet_rial)
