@@ -192,6 +192,51 @@ class ActionServices extends TextServices
 
     }
 
+    public function setApachish($user_id,$amount,$authority)
+    {
+
+        $data = array(
+            "amount" => $amount,
+            "user_id" => $user_id,
+        );
+
+        $jsonData = json_encode($data);
+        $ch = curl_init(env("APACHISH_URL")."get-payment/".$authority);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($jsonData)
+        ));
+
+        $result = curl_exec($ch);
+        $err = curl_error($ch);
+        $result = json_decode($result, true, JSON_PRETTY_PRINT);
+        curl_close($ch);
+
+        if ($err) {
+            logger("error apachish set",["cURL Error #:"=>$err]);
+            return false;
+
+        } else {
+            if (empty($result['errors'])) {
+                logger("set ok");
+                return true;
+            } else {
+
+                logger("set Error",[
+                    'Error Code: ' => $result['errors']['code'],
+                    'message: ' =>  $result['errors']['message']
+                ]);
+                return false;
+
+            }
+        }
+
+    }
+
 
     public function addNationalCode()
     {
