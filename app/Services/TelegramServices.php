@@ -242,7 +242,7 @@ class TelegramServices
         logger("edit message request",[json_decode($result, true)]);
         $response =  json_decode($result, true);
 
-        return data_get($response, "message_id");
+        return data_get($response, "result.message_id");
 
     }
 
