@@ -113,7 +113,7 @@ class ActionServices extends TextServices
 
         $text = "مبلغ ".$amount ."می خواهید شارژ کنید در صورت تایید دکمه پرداخت را زده تا به درگاه بانک منتقل شوید";
         $keyboard[0] = [
-            ['text' => "انتقال به درگاه بانک", 'url' => route("payment",["user_id"=>$this->getUserId(),"amount"=>$amount])],
+            ['text' => "انتقال به درگاه بانک", 'url' => route("payment",["user_id"=>$this->getUser()->id,"amount"=>$amount])],
         ];
 
         if(false && !data_get($this->getUser(),"national_code")){
