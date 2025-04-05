@@ -343,7 +343,8 @@ class TextServices
             "Game_test_",
             "Game_rial_",
             "Game_usdt_",
-            "increase_in_inventory_"
+            "increase_in_inventory_",
+            "goGateway_"
         ];
 
         if (array_filter($keywords, fn($keyword) => str_contains($this->data, $keyword)))
@@ -459,6 +460,8 @@ class TextServices
             $this->ChargingRial();
         elseif(str_contains($this->data, "Charging_usdt_"))
             $this->ChargingUsdt();
+        elseif(str_contains($this->data, "goGateway_"))
+            $this->goGateway();
         elseif(str_contains($this->data, "get_payment_receipt_"))
             $this->getPaymentReceipt();
     }

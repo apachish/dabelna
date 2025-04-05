@@ -6,6 +6,8 @@ namespace App\Services;
 
 use Apachish\Dabelna\App\Models\AccessBot;
 use Apachish\Dabelna\App\Models\Setting;
+use Apachish\Dabelna\App\Models\Transaction;
+use Apachish\Dabelna\App\Models\UserTelegram;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class ActionServices extends TextServices
@@ -113,8 +115,8 @@ class ActionServices extends TextServices
 
         $text = "مبلغ ".$amount ."می خواهید شارژ کنید در صورت تایید دکمه پرداخت را زده تا به درگاه بانک منتقل شوید";
         $keyboard[0] = [
-            ['text' => "انتقال به درگاه بانک", 'url' => route("payment",["user_id"=>$this->getUser()->id,"amount"=>$amount])],
-        ];
+            ['text' => "انتقال به درگاه بانک", 'callback_data' => "goGateway_" . $this->getUser()->id."_".$amount],
+        ];//'url' => route("payment",["user_id"=>$this->getUser()->id,"amount"=>$amount])
 
         if(false && !data_get($this->getUser(),"national_code")){
             $text = " برای شارژ مبلغ ". $amount. " شما باید کد ملی خود را وارد فرمایید ";
@@ -122,10 +124,74 @@ class ActionServices extends TextServices
             cache()->forget("ChargingRial_" .  $this->getUserId());
             cache()->set($this->getKeyCache() . $this->getUserId(), "add_national_code" );
         }
-        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         cache()->set("checkPayRial_" .  $this->getUserId(), $message_id);
 
     }
+
+    public function goGateway($user_id,$amount)
+    {
+        $array = str_replace('goGateway_', '', $this->getData());
+        $info = explode("_", $array);
+        $user = UserTelegram::find(data_get($info, 0));
+        $amount = data_get($info, 1);
+
+        $merchant_id = env("MERCHANT_ID");
+        if($user == null) return  response()->json(["not found"]);
+
+
+        $data = array("merchant_id" => $merchant_id,
+            "amount" => $amount,
+            "callback_url" => env("CALLBACK_URL"),
+            "description" => "شارژ اکانت",
+            "metadata" => [ "mobile"=> data_get($user, "mobile")],
+        );
+
+        $jsonData = json_encode($data);
+        $ch = curl_init(env("GATEWAY_URL"));
+        curl_setopt($ch, CURLOPT_USERAGENT, 'ZarinPal Rest Api v1');
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($jsonData)
+        ));
+
+        $result = curl_exec($ch);
+        $err = curl_error($ch);
+        $result = json_decode($result, true, JSON_PRETTY_PRINT);
+        curl_close($ch);
+
+
+
+        if ($err) {
+            return  response()->json(["cURL Error #:"=>$err]);
+        } else {
+            if (empty($result['errors'])) {
+                if ($result['data']['code'] == 100) {
+                    $this->setApachish($user_id,$amount,$result['data']["authority"]);
+                    Transaction::create([
+                        "user_id"=>$user_id,
+                        "payment_method"=>"gateway",
+                        "amount"=>$amount,
+                        "status"=>"pending",
+                        "data"=>$result['data']["authority"],
+                    ]);
+                    return redirect()->away('https://www.zarinpal.com/pg/StartPay/' . $result['data']["authority"]);
+                }
+            } else {
+
+                return  response()->json([
+                    'Error Code: ' => $result['errors']['code'],
+                    'message: ' =>  $result['errors']['message']
+                ]);
+
+            }
+        }
+
+    }
+
 
     public function addNationalCode()
     {
