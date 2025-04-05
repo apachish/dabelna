@@ -129,11 +129,12 @@ class ActionServices extends TextServices
 
     }
 
-    public function goGateway($user_id,$amount)
+    public function goGateway()
     {
         $array = str_replace('goGateway_', '', $this->getData());
         $info = explode("_", $array);
-        $user = UserTelegram::find(data_get($info, 0));
+        $user_id = data_get($info, 0);
+        $user = UserTelegram::find($user_id);
         $amount = data_get($info, 1);
 
         $merchant_id = env("MERCHANT_ID");
