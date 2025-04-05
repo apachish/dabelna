@@ -514,9 +514,10 @@ class TextServices
 
                 $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
                 $message .= "\n";
-                $message .= $this->getUser()->user_id . "🔢 ایدی عددی شما : ";
+                $message .= $this->getUserId() . "🔢 ایدی عددی شما : ";
                 $message .= "\n";
-                $message .= data_get($this->getUser(),"children_count",0)."👥 تعداد زیرمجموعه ها : ";
+                $message .= "👥 تعداد زیرمجموعه ها : ";
+                $message .= data_get($this->getUser(),"children_count",0);
                 $message .= "\n";
                 $message .= "🛍 تعداد بلیط خریداری شده : ";
                 $message .= "\n";
@@ -526,10 +527,8 @@ class TextServices
                 $message .= "\n";
                 $message .= "💎 موجودی شما :  ";
                 $message .= "\n";
-                if($rial)
-                    $message .= getPriceFormat($rial)." ریال "."\n";
-                if($usdt)
-                    $message .= getPriceFormat($usdt)." تتر "."\n";
+                $message .= getPriceFormat($rial)." ریال "."\n";
+                $message .= getPriceFormat($usdt)." تتر "."\n";
 
 
                 $message .= toJalali(now(),"Y/m/d H:i:s");
