@@ -100,12 +100,15 @@ class ActionServices extends TextServices
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
         cache()->forget("sendTypeCharging_" .  $this->getUserId());
         cache()->set("ChargingRial_" .  $this->getUserId(), $message_id);
+        logger("cache",["ChargingRial_" .  $this->getUserId()=>$message_id]);
         cache()->set($this->getKeyCache() . $this->getUserId(), "Charging_rial" );
     }
 
     public function checkPayRial()
     {
         $message_id = cache()->get("ChargingRial_".  $this->getUserId());
+        logger("get cache",["ChargingRial_".  $this->getUserId()=>$message_id]);
+
         $amount = (int)convertNumber($this->getMessage());
 
         $text = "مبلغ ".$amount ."می خواهید شارژ کنید در صورت تایید دکمه پرداخت را زده تا به درگاه بانک منتقل شوید";
