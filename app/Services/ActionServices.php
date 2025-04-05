@@ -132,6 +132,8 @@ class ActionServices extends TextServices
     public function goGateway()
     {
         $array = str_replace('goGateway_', '', $this->getData());
+        $message_id = cache()->get("checkPayRial_".  $this->getUserId());
+
         $info = explode("_", $array);
         $user_id = data_get($info, 0);
         $user = UserTelegram::find($user_id);
@@ -179,7 +181,12 @@ class ActionServices extends TextServices
                         "status"=>"pending",
                         "data"=>$result['data']["authority"],
                     ]);
-                    return redirect()->away('https://www.zarinpal.com/pg/StartPay/' . $result['data']["authority"]);
+                    $text = " برای شارژ اعتبار دکمه زیر را برای انتقال به درگاه بانک کلیک کنید";
+                    $keyboard[0] = [
+                        ['text' => "انتقال به درگاه بانک", 'url' => 'https://www.zarinpal.com/pg/StartPay/' . $result['data']["authority"]],
+                    ];
+                    $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+
                 }
             } else {
 
