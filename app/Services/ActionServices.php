@@ -340,7 +340,7 @@ class ActionServices extends TextServices
         $transaction = Transaction::find($transaction_id);
         if($transaction) {
             $paths = [];
-            collect($this->getPhoto())->each(function ($image) use ($apiURL, $chat_id, $token) {
+            collect($this->getPhoto())->each(function ($image) use ($apiURL, $chat_id, $token,&$paths) {
                 $file_id = data_get($image, "file_id");
 
                 // دریافت اطلاعات فایل
