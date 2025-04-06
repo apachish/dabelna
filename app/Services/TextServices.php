@@ -227,7 +227,10 @@ class TextServices
      */
     public function setPhoto(): void
     {
+        logger("oo", $this->update);
+
         $this->photo = isset($this->update['message']['photo']) ? $this->update['message']['photo'] : null;
+        logger("photo", $this->photo);
     }
 
     /**
