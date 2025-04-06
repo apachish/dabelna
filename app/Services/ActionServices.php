@@ -8,6 +8,7 @@ use Apachish\Dabelna\App\Models\AccessBot;
 use Apachish\Dabelna\App\Models\Setting;
 use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use Illuminate\Support\Facades\Storage;
 use Telegram\Bot\Keyboard\Keyboard;
 
 class ActionServices extends TextServices
@@ -294,8 +295,15 @@ class ActionServices extends TextServices
         $text .= "1: حتما حتما گزینه پرداخت کردم | ارسال رسید رو بزنید و بعدش رسیدتون رو ارسال کنید تا برامون بیاد!"."\n";
         $text .= "⏳ نکته این تراکنش فقط تا 15 دقیقه مهلت پرداخت دارد"."\n";
 
+
+        $transaction = Transaction::create([
+            "user_id"=>$this->getUser()->id,
+            "payment_method"=>"wallet",
+            "amount"=>$amount,
+            "status"=>"pending",
+        ]);
         $keyboard[0] = [
-            ['text' => "✅ پرداخت کردم ارسال رسید", 'callback_data' => "get_payment_receipt_" . $this->getUser()->id],
+            ['text' => "✅ پرداخت کردم ارسال رسید", 'callback_data' => "get_payment_receipt_" . $this->getUser()->id."_".$transaction->id],
         ];
         $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         cache()->set("checkPayUsdt_" .  $this->getUserId(), $message_id);
@@ -304,37 +312,65 @@ class ActionServices extends TextServices
 
     public function pendingSendFile()
     {
+        $array = str_replace('get_payment_receipt_', '', $this->getData());
+
+        $info = explode("_", $array);
+        $user_id = data_get($info, 0);
+        $transaction_id = data_get($info, 1);
         $text = "👈 کاربر گرامی :"."\n";
         $text.="🏷 لطفا عکس رسید واریزی ارسال کنید تا حساب شما شارژ شود ، از ارسال رسید فیک خودداری کنید."."\n";
         $text .= "✅ تایید رسید واریزی 5 دقیقه الی 12 ساعت.";
         $keyboard = [];
         $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
-        cache()->set($this->getKeyCache() . $this->getUserId(), "charging_usdt_getFile" );
+        cache()->set($this->getKeyCache() . $this->getUserId(), "charging_usdt_getFile_".$user_id."_".$transaction_id );
 
     }
     public function getPaymentReceipt()
     {
+        $array = str_replace('charging_usdt_getFile_', '', $this->getMessageCache());
+
+        $info = explode("_", $array);
+        $user_id = data_get($info, 0);
+        $transaction_id = data_get($info, 1);
         $token = data_get($this->bot,"token");
         $apiURL = "https://api.telegram.org/bot".$token;
         $chat_id = data_get($this->getData(),"chat.id");
+        $keyboard = [];
 
-        $file_id = data_get($this->getPhoto(),"file_id");
+        $transaction = Transaction::find($transaction_id);
+        if($transaction) {
+            $paths = [];
+            collect($this->getPhoto())->each(function ($image) use ($apiURL, $chat_id, $token) {
+                $file_id = data_get($image, "file_id");
 
-        // دریافت اطلاعات فایل
-        logger("$apiURL/getFile?file_id=$file_id",[$file_id]);
-        $file_info = file_get_contents("$apiURL/getFile?file_id=$file_id");
-        $file_info = json_decode($file_info, true);
+                // دریافت اطلاعات فایل
+                logger("$apiURL/getFile?file_id=$file_id", [$file_id]);
+                $file_info = file_get_contents("$apiURL/getFile?file_id=$file_id");
+                $file_info = json_decode($file_info, true);
 
-        logger("file_info",[$file_info]);
-        if (isset($file_info["result"]["file_path"])) {
-            $file_path = $file_info["result"]["file_path"];
-            $file_url = "https://api.telegram.org/file/bot$token/$file_path";
-            $text = "✅ رسید شما ارسال شد لطفا صبور باشید تا بررسی شود$file_url";
-            // ارسال لینک عکس به کاربر
-            file_get_contents("$apiURL/sendMessage?chat_id=$chat_id&text=");
-            $keyboard = [];
-            $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
+                logger("file_info", [$file_info]);
+                if (isset($file_info["result"]["file_path"])) {
+                    $file_path = $file_info["result"]["file_path"];
+                    $file_url = "https://api.telegram.org/file/bot$token/$file_path";
+                    // ارسال لینک عکس به کاربر
+                    $contents = file_get_contents($file_url);
+                    $filename = $file_id . "_" . basename(parse_url($file_url, PHP_URL_PATH)); // خروجی: sample.pdf
+                    $paths[] = "telegram/{$this->getUserId()}/{$filename}";
+                    Storage::disk('public')->put("telegram/{$this->getUserId()}/{$filename}", $contents);
+
+                }
+            });
+
+            $text = "✅ رسید شما ارسال شد لطفا صبور باشید تا بررسی شود";
+            $transaction->description = $this->getPhoto();
+            $transaction->data = $paths;
+            $transaction->save();
+        }else{
+            $text = "❌زمان ارسال رسید شما به پایان رسید لطفا مجداد فرایند را انجام دهید";
+
         }
+        $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
+
         cache()->forget($this->getKeyCache() . $this->getUserId());
     }
 
