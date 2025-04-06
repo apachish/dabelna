@@ -479,10 +479,10 @@ class TextServices
             $this->addNationalCode();
         elseif (str_contains($this->message_cache, "Charging_rial"))
             $this->checkPayRial();
-        elseif (str_contains($this->message_cache, "charging_usdt"))
-            $this->checkPayUsdt();
         elseif (str_contains($this->message_cache, "charging_usdt_getFile"))
             $this->getPaymentReceipt();
+        elseif (str_contains($this->message_cache, "charging_usdt"))
+            $this->checkPayUsdt();
         elseif (str_contains($this->message_cache, "add_customer_mobile"))
             $this->addCustomer();
         elseif (str_contains($this->message_cache, "add_mobile"))

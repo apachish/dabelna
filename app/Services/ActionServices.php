@@ -299,7 +299,7 @@ class ActionServices extends TextServices
         ];
         $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         cache()->set("checkPayUsdt_" .  $this->getUserId(), $message_id);
-
+        cache()->forget($this->getKeyCache() . $this->getUserId());
     }
 
     public function pendingSendFile()
