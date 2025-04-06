@@ -304,8 +304,6 @@ class ActionServices extends TextServices
 
     public function pendingSendFile()
     {
-        $message_id = cache()->get("checkPayUsdt_".  $this->getUserId());
-
         $text = "👈 کاربر گرامی :"."\n";
         $text.="🏷 لطفا عکس رسید واریزی ارسال کنید تا حساب شما شارژ شود ، از ارسال رسید فیک خودداری کنید."."\n";
         $text .= "✅ تایید رسید واریزی 5 دقیقه الی 12 ساعت.";
@@ -323,9 +321,11 @@ class ActionServices extends TextServices
         $file_id = data_get($this->getPhoto(),"file_id");
 
         // دریافت اطلاعات فایل
+        logger("$apiURL/getFile?file_id=$file_id",[$file_id]);
         $file_info = file_get_contents("$apiURL/getFile?file_id=$file_id");
         $file_info = json_decode($file_info, true);
 
+        logger("file_info",[$file_info]);
         if (isset($file_info["result"]["file_path"])) {
             $file_path = $file_info["result"]["file_path"];
             $file_url = "https://api.telegram.org/file/bot$token/$file_path";
@@ -335,6 +335,7 @@ class ActionServices extends TextServices
             $keyboard = [];
             $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         }
+        cache()->forget($this->getKeyCache() . $this->getUserId());
     }
 
 
