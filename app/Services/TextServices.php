@@ -227,7 +227,7 @@ class TextServices
      */
     public function setPhoto(): void
     {
-        $this->photo = isset($this->update['message']['photo']) ? convertNumber($this->update['message']['photo']) : null;
+        $this->photo = isset($this->update['message']['photo']) ? $this->update['message']['photo'] : null;
     }
 
     /**
