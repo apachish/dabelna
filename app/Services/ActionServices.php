@@ -288,7 +288,7 @@ class ActionServices extends TextServices
         $text .= "✅ تایید رسید واریزی از 10 دقیقه الی 12 ساعت.  (صبور باشید!)"."\n";
         $text .= "❗️در صورت خطا برای انتقال به پشتیبانی پیام دهید"."\n";
         $text .= "کیف پول:"."\n";
-        $text .= env("WALLET_USDT")."\n";
+        $text .= " ".env("WALLET_USDT")."\n";
         $text .= "❗️❗️❗️❗️❗️"."\n";
         $text .= "لطفا  در واریز خود دقت فرمایید ❤️"."\n";
         $text .= "1: حتما حتما گزینه پرداخت کردم | ارسال رسید رو بزنید و بعدش رسیدتون رو ارسال کنید تا برامون بیاد!"."\n";
@@ -297,8 +297,7 @@ class ActionServices extends TextServices
         $keyboard[0] = [
             ['text' => "✅ پرداخت کردم ارسال رسید", 'callback_data' => "get_payment_receipt_" . $this->getUser()->id],
         ];
-
-        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         cache()->set("checkPayUsdt_" .  $this->getUserId(), $message_id);
 
     }

@@ -344,7 +344,8 @@ class TextServices
             "Game_rial_",
             "Game_usdt_",
             "increase_in_inventory_",
-            "goGateway_"
+            "goGateway_",
+            "get_payment_receipt_"
         ];
 
         if (array_filter($keywords, fn($keyword) => str_contains($this->data, $keyword)))
