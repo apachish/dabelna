@@ -361,7 +361,8 @@ class TextServices
             "add_mobile",
             "pending_accept",
             "Charging_rial",
-            "charging_usdt"
+            "charging_usdt",
+            "charging_usdt_getFile"
         ];
 
         if (array_filter($keywords, fn($keyword) => str_contains($this->message_cache, $keyword)))
@@ -464,7 +465,7 @@ class TextServices
         elseif(str_contains($this->data, "goGateway_"))
             $this->goGateway();
         elseif(str_contains($this->data, "get_payment_receipt_"))
-            $this->getPaymentReceipt();
+            $this->pendingSendFile();
     }
 
     public function actionByCache()
@@ -480,6 +481,8 @@ class TextServices
             $this->checkPayRial();
         elseif (str_contains($this->message_cache, "charging_usdt"))
             $this->checkPayUsdt();
+        elseif (str_contains($this->message_cache, "charging_usdt_getFile"))
+            $this->getPaymentReceipt();
         elseif (str_contains($this->message_cache, "add_customer_mobile"))
             $this->addCustomer();
         elseif (str_contains($this->message_cache, "add_mobile"))

@@ -302,9 +302,20 @@ class ActionServices extends TextServices
 
     }
 
+    public function pendingSendFile()
+    {
+        $message_id = cache()->get("checkPayUsdt_".  $this->getUserId());
+
+        $text = "👈 کاربر گرامی :"."\n";
+        $text.="🏷 لطفا عکس رسید واریزی ارسال کنید تا حساب شما شارژ شود ، از ارسال رسید فیک خودداری کنید."."\n";
+        $text .= "✅ تایید رسید واریزی 5 دقیقه الی 12 ساعت.";
+        $keyboard = [];
+        $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "charging_usdt_getFile" );
+
+    }
     public function getPaymentReceipt()
     {
-        $message_id = cache()->get("checkPayUsdt_" .  $this->getUserId());
         $token = data_get($this->bot,"token");
         $apiURL = "https://api.telegram.org/bot".$token;
         $chat_id = data_get($this->getData(),"chat.id");
@@ -322,7 +333,7 @@ class ActionServices extends TextServices
             // ارسال لینک عکس به کاربر
             file_get_contents("$apiURL/sendMessage?chat_id=$chat_id&text=");
             $keyboard = [];
-            $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+            $message_id = $this->getTelegramServices()->MessageReplyMarkup($this->telegram, $this->getUserId(), $text, $keyboard);
         }
     }
 
