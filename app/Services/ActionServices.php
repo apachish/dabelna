@@ -384,8 +384,8 @@ class ActionServices extends TextServices
             $query->whereNull("player_id");
         }])->where("status",Game::STATUS_WAITING)->first();
         if($game) {
-            $card = $game->cards->random(1)->first();
-            if ($card) {
+            if ($game->cards->count()) {
+                $card = $game->cards->random(1)->first();
 
                 $path_report = storage_path(data_get($card, "file"));
                 $name_file = convertNumber(toJalali(now() . "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
