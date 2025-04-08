@@ -83,7 +83,7 @@ class DobrnaGame {
                "numbers"=>json_encode($card),
                 "marked"=>json_encode($marked),
                 "game_id"=>$game_id,
-                "file"=>storage_path($path."کارت_بازیکن_".$i.'.pdf')
+                "file"=>$path."کارت_بازیکن_".$i.'.pdf'
             ]);
 
         }
