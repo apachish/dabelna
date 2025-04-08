@@ -470,7 +470,7 @@ class TextServices
             $this->goGateway();
         elseif(str_contains($this->data, "get_payment_receipt_"))
             $this->pendingSendFile();
-        elseif (str_contains($this->message_cache, "Game_test_"))
+        elseif (str_contains($this->data, "Game_test_"))
             $this->GameTest();
     }
 
