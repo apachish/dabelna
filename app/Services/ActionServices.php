@@ -388,7 +388,7 @@ class ActionServices extends TextServices
                 $card = $game->cards->random(1)->first();
 
                 $path_report = storage_path(data_get($card, "file"));
-                $name_file = convertNumber(toJalali(now() . "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
+                $name_file = convertNumber(toJalali(now() , "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
                 $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
                 $card->player_id = $this->getUser()->id;
                 $card->update();
