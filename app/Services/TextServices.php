@@ -472,6 +472,10 @@ class TextServices
             $this->pendingSendFile();
         elseif (str_contains($this->data, "Game_test_"))
             $this->GameTest();
+        elseif (str_contains($this->data, "Game_rial_"))
+            $this->GameRial();
+        elseif (str_contains($this->data, "Game_usdt_"))
+            $this->GameUsdt();
     }
 
     public function actionByCache()

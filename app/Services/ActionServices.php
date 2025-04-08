@@ -380,34 +380,16 @@ class ActionServices extends TextServices
 
     public function GameTest()
     {
-        $game = Game::where("type",Game::TYPE_TEST)->with(["cards"=>function($query){
-            $query->whereNull("player_id");
-        }])->where("status",Game::STATUS_WAITING)->first();
-        if($game) {
-            if ($game->cards->count()) {
-                $card = $game->cards->random(1)->first();
+        $this->card(Game::TYPE_TEST);
 
-                $path_report = storage_path(data_get($card, "file"));
-                $name_file = convertNumber(toJalali(now() , "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
-                $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
-                $card->player_id = $this->getUser()->id;
-                $card->update();
-
-                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-                $response = $this->telegram->sendDocument([
-                    'chat_id' => $this->getUserId(),
-                    'document' => InputFile::create($path_report, $name_file . ".pdf")
-                ]);
-            } else {
-                $text = "کارت این بازی تمام شد منتظر بازی جدید باشید";
-                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-
-            }
-        }else {
-            $text = "در حال حاضر بازی فعال نمی باشد";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-
-        }
+    }
+    public function GameRial()
+    {
+        $this->card(Game::TYPE_RIAL);
+    }
+    public function GameUsdt()
+    {
+        $this->card(Game::TYPE_USDT);
 
     }
 
@@ -449,6 +431,42 @@ class ActionServices extends TextServices
         if ($callback_query) {
             $url = "https://api.telegram.org/bot" . $this->bot->token . "/answerCallbackQuery?callback_query_id=$callback_id&text=" . urlencode($alert_text) . "&show_alert=true";
             file_get_contents($url);
+        }
+    }
+
+    /**
+     * @return void
+     * @throws \Telegram\Bot\Exceptions\TelegramSDKException
+     */
+    public function card($type): void
+    {
+        $game = Game::where("type", $type)->with(["cards" => function ($query) {
+            $query->whereNull("player_id");
+        }])->where("status", Game::STATUS_WAITING)->first();
+        if ($game) {
+            if ($game->cards->count()) {
+                $card = $game->cards->random(1)->first();
+
+                $path_report = storage_path(data_get($card, "file"));
+                $name_file = convertNumber(toJalali(now(), "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
+                $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
+                $card->player_id = $this->getUser()->id;
+                $card->update();
+
+                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+                $response = $this->telegram->sendDocument([
+                    'chat_id' => $this->getUserId(),
+                    'document' => InputFile::create($path_report, $name_file . ".pdf")
+                ]);
+            } else {
+                $text = "کارت این بازی تمام شد منتظر بازی جدید باشید";
+                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+
+            }
+        } else {
+            $text = "در حال حاضر بازی فعال نمی باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+
         }
     }
 
