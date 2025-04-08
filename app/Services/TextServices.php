@@ -349,6 +349,7 @@ class TextServices
             "increase_in_inventory_",
             "goGateway_",
             "get_payment_receipt_"
+
         ];
 
         if (array_filter($keywords, fn($keyword) => str_contains($this->data, $keyword)))
@@ -469,6 +470,8 @@ class TextServices
             $this->goGateway();
         elseif(str_contains($this->data, "get_payment_receipt_"))
             $this->pendingSendFile();
+        elseif (str_contains($this->message_cache, "Game_test_"))
+            $this->GameTest();
     }
 
     public function actionByCache()
