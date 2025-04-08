@@ -383,19 +383,25 @@ class ActionServices extends TextServices
         $game = Game::where("type",Game::TYPE_TEST)->with(["cards"=>function($query){
             $query->whereNull("player_id");
         }])->where("status",Game::STATUS_WAITING)->first();
-        $card = $game->cards->random(1)->first();
-        if($card){
+        if($game) {
+            $card = $game->cards->random(1)->first();
+            if ($card) {
 
-            $path_report = storage_path(data_get($card,"file"));
-            $name_file = convertNumber(toJalali(now()."m_d")).slug_seo(data_get($this->getUser(),"fullName"),"_")."_".data_get($game,"id")."_".data_get($card,"id");
-            $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-            $response = $this->telegram->sendDocument([
-                'chat_id' => $this->getUserId(),
-                'document' => InputFile::create($path_report, $name_file.".pdf")
-            ]);
-        }else{
-            $text = "کارتی در حال حاضر موجود نمی باشد";
+                $path_report = storage_path(data_get($card, "file"));
+                $name_file = convertNumber(toJalali(now() . "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
+                $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
+                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+                $response = $this->telegram->sendDocument([
+                    'chat_id' => $this->getUserId(),
+                    'document' => InputFile::create($path_report, $name_file . ".pdf")
+                ]);
+            } else {
+                $text = "کارتی در حال حاضر موجود نمی باشد";
+                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+
+            }
+        }else {
+            $text = "در حال حاضر بازی فعال نمی باشد";
             $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
 
         }
