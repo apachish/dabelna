@@ -80,6 +80,7 @@ class DobrnaGame {
             $pdf->Output(storage_path($path."کارت_بازیکن_".$i.'.pdf'), 'F');
 
             Card::create([
+                "title"=> "کارت بازی".$i,
                "numbers"=>json_encode($card),
                 "marked"=>json_encode($marked),
                 "game_id"=>$game_id,

@@ -39,7 +39,8 @@ class CreateCardDobrnaGame extends Command
            $game =  Game::create([
                 "lottery_date"=>now()->addHour(1),
                 "type"=>$key,
-                "num_player"=>$value
+                "num_player"=>$value,
+               "remaining_card"=>$value
             ]);
             $dobrna = new DobrnaGame($value);
             $path = "app/public/games/".Game::$types[data_get($game,"type")]."/".data_get($game,"id")."/";

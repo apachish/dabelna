@@ -348,7 +348,8 @@ class TextServices
             "Game_usdt_",
             "increase_in_inventory_",
             "goGateway_",
-            "get_payment_receipt_"
+            "get_payment_receipt_",
+            "get_card_"
 
         ];
 
@@ -363,10 +364,11 @@ class TextServices
         $keywords = [
             "add_fullName",
             "add_mobile",
-            "pending_accept",
+            "pending_agent",
             "Charging_rial",
             "charging_usdt",
-            "charging_usdt_getFile"
+            "charging_usdt_getFile",
+
         ];
 
         if (array_filter($keywords, fn($keyword) => str_contains($this->message_cache, $keyword)))
@@ -381,12 +383,15 @@ class TextServices
         if ($this->getMessage() == "قوانین را خواندم و آنها را پذیرفتم") {
             $this->ruleAccept();
             return true;
+        }elseif ($this->getMessage() == "شروع بازی\xF0\x9F\x8E\xB0") {
+            $this->startMessage();
+            return true;
         }elseif (!$this->user->fullName) {
-            $text = " لطفا نام و نام خانوادگی خود را وارد نمایید";
+            $text = " لطفا نام کاربری خود را وارد نمایید";
             cache()->set($this->key_cache . $this->user_id, "add_fullName");
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => $text]);
             return true;
-        } elseif (!$this->user->mobile) {
+        } elseif (false &&  !$this->user->mobile) {
             $text = "لطفا شماره خود را به اشتراک بگذارید";
             $this->telegram_services->sendRequestContactButton($this->getUserId(), $text);
             cache()->set($this->key_cache . $this->user_id, "rule_accept");
@@ -411,13 +416,6 @@ class TextServices
         if (!$this->checkText())
             return $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
 
-        logger("TextTelegram",[
-            "update_id" => data_get($this->update, 'update_id'),
-            "message_id" => data_get($this->update, 'message.message_id'),
-            "user_telegram_id" => $this->user->id,
-            "text" => data_get($this->update, 'message.text'),
-            "data" => json_encode($this->update)
-        ]);
         TextTelegram::create([
             "update_id" => data_get($this->update, 'update_id'),
             "message_id" => data_get($this->update, 'message.message_id'),
@@ -433,14 +431,15 @@ class TextServices
                 break;
             case "\xF0\x9F\x8E\xABخرید بلیط":
             case "\xF0\x9F\x92\xB3کیف پول":
-            case "پروفایل\xF0\x9F\x91\xA4":
+            case "\xF0\x9F\x8E\xB2بازی های من":
             case "\xF0\x9F\x93\x9Aقوانین":
             case "راهنما\xE2\x81\x89":
+            case "تماس با پشتیبانی\xF0\x9F\x93\x9E":
                 $this->getAction();
                 break;
             case  "/start":
             case  "start":
-                if ($this->user && $this->user->role)
+                if ($this->user && $this->user->status)
                     $this->user->change_menu = true;
                 break;
             default:
@@ -471,11 +470,15 @@ class TextServices
         elseif(str_contains($this->data, "get_payment_receipt_"))
             $this->pendingSendFile();
         elseif (str_contains($this->data, "Game_test_"))
-            $this->GameTest();
+            $this->gameTest();
         elseif (str_contains($this->data, "Game_rial_"))
-            $this->GameRial();
+            $this->gameRial();
         elseif (str_contains($this->data, "Game_usdt_"))
-            $this->GameUsdt();
+            $this->listGame();
+        elseif (str_contains($this->data, "request_get_card_"))
+            $this->listCard();
+        elseif (str_contains($this->data, "get_card_"))
+            $this->gameUsdt();
     }
 
     public function actionByCache()
@@ -499,11 +502,7 @@ class TextServices
             $this->addMobile();
         elseif (str_contains($this->message_cache, "add_fullName"))
             $this->addFullName();
-        elseif (str_contains($this->message_cache, "pending_accept")) {
-            if ($this->user->status)
-                cache()->forget($this->getKeyCache() . $this->user->id);
-            else
-                $this->pendingAccept();
+        elseif (str_contains($this->message_cache, "pending_agent")) {
 
         }
     }
@@ -516,17 +515,19 @@ class TextServices
                 $keyboard[0] = [
                     ['text' => "بازی تست", 'callback_data' => "Game_test_" . $this->getUser()->id],
                 ];
+//                $keyboard[1] = [
+//                    ['text' => "بازی ریالی", 'callback_data' => "Game_rial_" . $this->getUser()->id],
+//                ];
                 $keyboard[1] = [
-                    ['text' => "بازی ریالی", 'callback_data' => "Game_rial_" . $this->getUser()->id],
-                ];
-                $keyboard[2] = [
-                    ['text' => "بازی تتری", 'callback_data' => "Game_usdt_" . $this->getUser()->id],
+                    ['text' => "بازی", 'callback_data' => "Game_usdt_" . $this->getUser()->id],
                 ];
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+                cache()->set("buy_game_" .  $this->getUserId(), $message_id);
+
                 break;
             case "\xF0\x9F\x92\xB3کیف پول":
-                $wallet_usdt = data_get($this->data, 'walletsUsdt');
-                $wallet_rial = data_get($this->data, 'walletsRial');
+                $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+                $wallet_rial = data_get($this->getUser(), 'walletsRial');
                 $rial = 0;
                 $usdt = 0;
                 if($wallet_rial)
@@ -588,11 +589,14 @@ class TextServices
         ];
         $keyboard_menu[$i++] = [
             ['text' => "\xF0\x9F\x92\xB3کیف پول"],
-            ['text' => "پروفایل\xF0\x9F\x91\xA4"],
+            ['text' => "\xF0\x9F\x8E\xB2بازی های من"],
         ];
         $keyboard_menu[$i++] = [
             ['text' => "\xF0\x9F\x93\x9Aقوانین"],
             ['text' => "راهنما\xE2\x81\x89"],
+        ];
+        $keyboard_menu[$i++] = [
+            ['text' => "تماس با پشتیبانی\xF0\x9F\x93\x9E"],
         ];
         return $keyboard_menu;
     }

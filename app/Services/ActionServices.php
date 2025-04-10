@@ -56,7 +56,7 @@ class ActionServices extends TextServices
         $this->getUser()->fullName = $this->message;
         $this->getUser()->update();
         cache()->forget($this->getKeyCache() . $this->getUserId());
-        if (!$this->getUser()->mobile) {
+        if (false && !$this->getUser()->mobile) {
             $text = "ممنون شماره خود را به اشتراک بگذارید";
             $this->telegram_services->sendRequestContactButton($this->getUserId(), $text);
             cache()->set($this->getKeyCache() . $this->getUserId(), "add_mobile");
@@ -68,22 +68,35 @@ class ActionServices extends TextServices
         }
     }
 
-    public function pendingAccept()
+    public function startMessage()
     {
-        $text = "منتظر تایید مدیر سیستم باشید تا دسترسی به شما ارائه گردد";
-        cache()->set($this->getKeyCache() . $this->getUserId(), "pending_accept");
-        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+        $this->getUser()->change_menu = true;
+        $this->getUser()->update();
+        $keyboard_menu = $this->setMenu();
+        $this->message_menu = "خوش آمدید، از این لحظه منو شما فعال شد";
+        $this->menu($keyboard_menu, $this->getUser()->status, $this->getUser());
     }
 
     public function ruleAccept()
     {
         $this->getUser()->update(["accept_rule" => now()->format("Y-m-d H:i")]);
-        $this->getUser()->change_menu = true;
-        $this->getUser()->update();
-        $keyboard_menu = $this->setMenu();
-        $this->message_menu = "خوش آمدید، از این لحظه منو کاربری فعال شد";
-        $this->menu($keyboard_menu, $this->getUser()->status, $this->getUser());
+        $text = "کاربر ";
+        $text .= $this->getUser()->fullName;
+        $text .= " به سیستم ";
+        $text .= env("APP_NAME");
+        $text .= " خوش آمدید .";
+        $text .= "\n";
+        $text .= "در صورت داشتن معرف کد معرف خود را وارد کنید ";
+        $text .= "\n";
+        $text .= "در غیر اینصورت دکمه شروع بازی را کلیک کنید تا منو بازی برای شما فعال گردد";
+        cache()->set($this->getKeyCache() . $this->getUserId(), "pending_agent");
+        $keyboard[0] = [
+            ['text' => "شروع بازی\xF0\x9F\x8E\xB0"],
+        ];
+        $response = TelegramServices::menu($this->telegram, $keyboard, $this->getUser(), $text);
     }
+
+
 
     public function sendTypeCharging()
     {
@@ -378,7 +391,7 @@ class ActionServices extends TextServices
     }
 
 
-    public function GameTest()
+    public function gameTest()
     {
         $this->card(Game::TYPE_TEST);
 
@@ -387,11 +400,83 @@ class ActionServices extends TextServices
     {
         $this->card(Game::TYPE_RIAL);
     }
-    public function GameUsdt()
+    public function gameUsdt()
     {
-        $this->card(Game::TYPE_USDT);
+        $data = str_replace("get_card_","",$this->getData());
+        $array = explode("_", $data);
+        $this->card(Game::TYPE_USDT,data_get($array,0),data_get($array,1));
+    }
+
+    public function listGame()
+    {
+        $message_id = cache()->get("buy_game_" .  $this->getUserId());
+        $text = "📌 کاربر عزیز تعداد افراد حاضر در هر اتاق که حداکثر 48 ";
+        $text .= " \xF0\x9F\x8E\xAB	";
+        $text .="  بلیط میباشد، در مبلغ هر گروه ضرب میشود و پس از کسر 10% کارمزد به حساب کاربری فرد برنده(احتمال برنده شدن چند نفر می باشد) افزوده میشود.";
+        $text .= "\n";
+        $text .= "یکی گروه های زیر را انتخاب کنید";
+        $games =  Game::where("status",Game::STATUS_WAITING_PLAYER)->where("type",Game::TYPE_USDT)->get();
+        $keyboard = [];
+        $m = 0;
+        $k = 0;
+        foreach ($games as $i=>$game) {
+            $price = data_get($game,"price")?:"رایگان";
+            $keyboard[$i][$m++] = [
+                'text' => " بازی $price تتری ",
+                'callback_data' => "request_get_card_" . $game->id,
+            ];
+        }
+        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->set("list_game_" .  $this->getUserId(), $message_id);
+        cache()->forget("buy_game_" .  $this->getUserId());
 
     }
+
+    public function listCard()
+    {
+        $message_id = cache()->get("list_game_" .  $this->getUserId());
+        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt')->sum("amount");
+
+        $game_id  = (int)str_replace("request_get_card_","",$this->getData());
+        $text = "📌 کاربر عزیز یکی از کارت های ";
+        $text .= " \xF0\x9F\x8E\xAB	";
+        $text .=" باقیمانده زیر را انتخاب کنید :";
+        $text .= "\n";
+        $text .= "\xE2\x80\xBC	احتمال دارد تا کلیک شما کاربر دیگری کارت دریافت کنند";
+        $game =  Game::where("id",Game::STATUS_WAITING_PLAYER)->where("type",Game::TYPE_USDT)
+            ->with(["cards" => function ($query) {
+                $query->whereNull("player_id");
+            }])
+            ->find($game_id);
+        if($game) {
+            if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
+                $keyboard = [];
+                $m = 0;
+                $k = 0;
+                foreach ($game->cards as $i => $card) {
+                    $keyboard[$i][$m++] = [
+                        'text' => data_get($card, "title"),
+                        'callback_data' => "get_card_" . $game->id . "_" . $card->id,
+                    ];
+                }
+                $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                cache()->set("buy_game_" . $this->getUserId(), $message_id);
+                cache()->forget("list_game_" . $this->getUserId());
+            }else{
+                $text = "موجود کاربری شما کافی نمی باشد";
+                $keyboard =[];
+                $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+            }
+        }else{
+            $text = "کارت بازی تمام شده است";
+            $keyboard =[];
+            $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        }
+
+
+    }
+
+
 
 
     /**
@@ -438,26 +523,51 @@ class ActionServices extends TextServices
      * @return void
      * @throws \Telegram\Bot\Exceptions\TelegramSDKException
      */
-    public function card($type): void
+    public function card($type,$game_id=null,$id=null): void
     {
-        $game = Game::where("type", $type)->with(["cards" => function ($query) {
+        $message_id = cache()->get("buy_game_" .  $this->getUserId());
+        $game = Game::where("type", $type)->with(["cards" => function ($query) use ($id) {
             $query->whereNull("player_id");
-        }])->where("status", Game::STATUS_WAITING)->first();
+            $query->where("id",$id);
+        }])->where("status", Game::STATUS_WAITING)
+            ->lockForUpdate();
+        if($game_id)
+            $game = $game->find($game_id);
+        else
+            $game = $game->first();
+
         if ($game) {
+
             if ($game->cards->count()) {
-                $card = $game->cards->random(1)->first();
+                $card = $id?$game->cards->where("id",$id)->first():$game->cards->random(1)->first();
+                if($card) {
+                    $path_report = storage_path(data_get($card, "file"));
+                    $name_file = convertNumber(toJalali(now(), "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
+                    $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
+                    $game->remaining_card -=1;
+                    if( $game->remaining_card >= 0) {
+                        $card->player_id = $this->getUser()->id;
+                        $card->update();
 
-                $path_report = storage_path(data_get($card, "file"));
-                $name_file = convertNumber(toJalali(now(), "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
-                $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
-                $card->player_id = $this->getUser()->id;
-                $card->update();
+                        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+                        $response = $this->telegram->sendDocument([
+                            'chat_id' => $this->getUserId(),
+                            'document' => InputFile::create($path_report, $name_file . ".pdf")
+                        ]);
+                        $game->update();
+                    }
+                }else{
+                    if($id){
+                        $text = "کارت انتخابی شما توسط فرد دیگری دریافت شد";
+                        $keyboard =[];
+                        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                    }else{
+                        $text = "کارت بازی تمام شده است";
+                        $keyboard =[];
+                        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                    }
+                }
 
-                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-                $response = $this->telegram->sendDocument([
-                    'chat_id' => $this->getUserId(),
-                    'document' => InputFile::create($path_report, $name_file . ".pdf")
-                ]);
             } else {
                 $text = "کارت این بازی تمام شد منتظر بازی جدید باشید";
                 $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
