@@ -92,7 +92,7 @@ class ActionServices extends TextServices
 
     public function ruleAccept()
     {
-        $this->getUser()->update(["accept_rule" => now()->format("Y-m-d H:i")]);
+        $this->getUser()->update(["accept_rule" => now()->format("Y-m-d H:i"),"status"=>true]);
         $text = "کاربر ";
         $text .= $this->getUser()->fullName;
         $text .= " به سیستم ";
