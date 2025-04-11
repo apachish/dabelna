@@ -328,6 +328,7 @@ class TextServices
             "\xF0\x9F\x93\x9Aقوانین",
             "راهنما\xE2\x81\x89",
             "قوانین را خواندم و آنها را پذیرفتم",
+            "شروع بازی\xF0\x9F\x8E\xB0"
         ];
         if (in_array($this->message, $accept))
             return true;
