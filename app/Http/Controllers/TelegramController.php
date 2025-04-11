@@ -37,7 +37,7 @@ class TelegramController extends Controller
                 $text_services->getTelegramServices()->sendMessage($text_services->getUserId(),"متن شما نامعتبر می باشد");
 
 
-            if(!$text_services->getUser()->fullName || !$text_services->getUser()->mobile )
+            if(!$text_services->getUser()->fullName  )
                 return false;
 
             $keyboard_menu = $text_services->setMenu();
