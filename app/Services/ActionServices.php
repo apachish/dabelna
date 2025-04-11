@@ -53,19 +53,28 @@ class ActionServices extends TextServices
 
     public function addFullName()
     {
-        $this->getUser()->fullName = $this->message;
-        $this->getUser()->update();
-        cache()->forget($this->getKeyCache() . $this->getUserId());
-        if (false && !$this->getUser()->mobile) {
-            $text = "ممنون شماره خود را به اشتراک بگذارید";
+        $exist = UserTelegram::where("fullName",$this->message)->first();
+        if($exist){
+            $text = "نام کاربری شما در سیستم موجود می باشد";
             $this->telegram_services->sendRequestContactButton($this->getUserId(), $text);
-            cache()->set($this->getKeyCache() . $this->getUserId(), "add_mobile");
+            return false;
+        }else{
+            $this->getUser()->fullName = $this->message;
+            $this->getUser()->update();
+            cache()->forget($this->getKeyCache() . $this->getUserId());
+            if (false && !$this->getUser()->mobile) {
+                $text = "ممنون شماره خود را به اشتراک بگذارید";
+                $this->telegram_services->sendRequestContactButton($this->getUserId(), $text);
+                cache()->set($this->getKeyCache() . $this->getUserId(), "add_mobile");
 
-        } elseif (!$this->getUser()->status) {
-            cache()->set($this->getKeyCache() . $this->getUserId(), "pending_accept");
-            $text = "منتظر تایید مدیر سیستم باشید تا دسترسی به شما ارائه گردد";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            } elseif (!$this->getUser()->status) {
+                cache()->set($this->getKeyCache() . $this->getUserId(), "pending_accept");
+                $text = "منتظر تایید مدیر سیستم باشید تا دسترسی به شما ارائه گردد";
+                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            }
         }
+
+
     }
 
     public function startMessage()
