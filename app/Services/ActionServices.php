@@ -68,9 +68,13 @@ class ActionServices extends TextServices
                 cache()->set($this->getKeyCache() . $this->getUserId(), "add_mobile");
 
             } elseif (!$this->getUser()->status) {
-                cache()->set($this->getKeyCache() . $this->getUserId(), "rule_accept");
-//                $text = "منتظر تایید مدیر سیستم باشید تا دسترسی به شما ارائه گردد";
-//                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+                $text = "لطفا قوانین را مطالعه فرمایید";
+                $rule = Setting::where("key", "rule")->where("status",true)->first();
+
+                $text .= $rule ? $rule->value : "";
+                $keyboard[0][0] = ['text' => "قوانین را خواندم و آنها را پذیرفتم"];
+                TelegramServices::menu($this->telegram, $keyboard, $this->getUser(), $text);
+                cache()->forget($this->getKeyCache() . $this->getUserId());
             }
         }
 
