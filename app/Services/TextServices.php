@@ -562,7 +562,7 @@ class TextServices
                     ['text' => "افزایش موجودی", 'callback_data' => "increase_in_inventory_" . $this->getUser()->id],
                 ];
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
-//                cache()->set("trade_open_" . $this->user_id, $message_id);
+                cache()->set("increase_in_inventory_" . $this->user_id, $message_id);
                 break;
             case "\xF0\x9F\x93\x9Aقوانین":
                 $rule = Setting::where("key", "rule")->where("status",true)->first();

@@ -296,7 +296,8 @@ class ActionServices extends TextServices
 
     public function ChargingUsdt()
     {
-        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
+//        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
+        $message_id = cache()->get("increase_in_inventory_" .  $this->getUserId());
         $text = "📌 جهت افزایش اعتبار کیف پول مبلغ مورد نظر را به تتر ارسال کنید";
         $keyboard = [];
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
