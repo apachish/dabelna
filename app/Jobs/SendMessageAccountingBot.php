@@ -29,7 +29,7 @@ class SendMessageAccountingBot implements ShouldQueue
      */
     public function handle(): void
     {
-        $bot_accounting = Bot::where("title", "botAccounting")->with("accessBot")->first();
+        $bot_accounting = Bot::where("title", "AccountingDabernaBot")->with("accessBot")->first();
         if ($bot_accounting) {
             try {
                 $telegram_accounting = new Api($bot_accounting->token);
