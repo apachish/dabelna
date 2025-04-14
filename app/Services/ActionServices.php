@@ -434,7 +434,7 @@ class ActionServices extends TextServices
         $k = 0;
         foreach ($games as $i=>$game) {
             $price = data_get($game,"price")?:"رایگان";
-            $keyboard[$i][$m++] = [
+            $keyboard[$i][$m] = [
                 'text' => " بازی $price تتری ",
                 'callback_data' => "request_get_card_" . $game->id,
             ];
