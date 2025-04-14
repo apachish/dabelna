@@ -461,7 +461,7 @@ class TextServices
         elseif (str_contains($this->data, "rule_accept"))
             $this->ruleAccept();
         elseif(str_contains($this->data, "increase_in_inventory_"))
-            $this->sendTypeCharging();
+            $this->ChargingUsdt();
         elseif(str_contains($this->data, "Charging_rial_"))
             $this->ChargingRial();
         elseif(str_contains($this->data, "Charging_usdt_"))
