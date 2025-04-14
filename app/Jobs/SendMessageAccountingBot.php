@@ -50,7 +50,7 @@ class SendMessageAccountingBot implements ShouldQueue
                             "request_id" => $this->order_id
                         ]);
                         $file = json_decode(data_get($order, "data"));
-                        $path_report = data_get($file,'0');
+                        $path_report = storage_path("app/public/".data_get($file,'0'));
                         $name_file = "receipt_".data_get($order,'user.telegram_id')."_".data_get($order,'id').".jpg";
                         $response = $telegram_accounting->sendDocument([
                             'chat_id' => $admin->user_id,
