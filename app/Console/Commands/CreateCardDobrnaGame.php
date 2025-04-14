@@ -28,16 +28,9 @@ class CreateCardDobrnaGame extends Command
      */
     public function handle()
     {
-        $games = Game::where("status",Game::STATUS_WAITING)->get();
-        foreach ($games as $key => $value) {
-            $data = $value->toArray();
+        $games = Game::where("status",Game::STATUS_WAITING)->dosenthave("cards")->get();
+        foreach ($games as $key => $game) {
             $data["status"] = Game::STATUS_WAITING_PLAYER;
-
-           $game =  Game::create([
-                "lottery_date"=>now()->addHour(1),
-                "num_player"=>$value,
-               "remaining_card"=>$value
-            ]);
             $dobrna = new DobrnaGame(data_get($game,"num_player"));
             $path = "app/public/games/".Game::$types[data_get($game,"type")]."/".data_get($game,"id")."/";
             makeDirectoryStorage($path);
