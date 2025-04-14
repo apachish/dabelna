@@ -28,13 +28,14 @@ class CreateCardDobrnaGame extends Command
      */
     public function handle()
     {
-        $games = Game::where("status",Game::STATUS_WAITING)->dosenthave("cards")->get();
+        $games = Game::where("status",Game::STATUS_WAITING_PLAYER)->doesntHave("cards")->get();
+
         foreach ($games as $key => $game) {
             $data["status"] = Game::STATUS_WAITING_PLAYER;
             $dobrna = new DobrnaGame(data_get($game,"num_player"));
             $path = "app/public/games/".Game::$types[data_get($game,"type")]."/".data_get($game,"id")."/";
             makeDirectoryStorage($path);
-            $dobrna->generatePDF($path,data_get($game,"id"),$key);
+            $dobrna->generatePDF($path,$game);
         }
     }
 }
