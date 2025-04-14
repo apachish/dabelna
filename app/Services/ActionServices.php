@@ -331,7 +331,7 @@ class ActionServices extends TextServices
             "user_id"=>$this->getUser()->id,
             "payment_method"=>"wallet",
             "amount"=>$amount,
-            "status"=>"pending",
+            "status"=>Transaction::STATUS_PENDING,
         ]);
         $keyboard[0] = [
             ['text' => "✅ پرداخت کردم ارسال رسید", 'callback_data' => "get_payment_receipt_" . $this->getUser()->id."_".$transaction->id],
