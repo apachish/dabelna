@@ -643,4 +643,8 @@ class TextServices
 
         return false;
     }
+    public function accessAdmin($type)
+    {
+        return $this->bot && $this->bot->accessBot ? $this->bot->accessBot->where("user_id", $this->user_id)->where("type", $type) : false;
+    }
 }

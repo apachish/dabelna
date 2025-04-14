@@ -12,7 +12,7 @@ class TelegramAccountingController extends Controller
     {
         try {
             $text_services = new ActionAccountingServices($token);
-            $access = $text_services->accessAdmin();
+            $access = $text_services->accessAdmin("accounting");
             if ($access == null) return false;
             $text_services->setTypeMessage();
             $text_services->setUserId();
