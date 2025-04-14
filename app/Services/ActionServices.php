@@ -10,6 +10,7 @@ use Apachish\Dabelna\App\Models\Game;
 use Apachish\Dabelna\App\Models\Setting;
 use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use App\Jobs\SendMessageAccountingBot;
 use Illuminate\Support\Facades\Storage;
 use Telegram\Bot\FileUpload\InputFile;
 use Telegram\Bot\Keyboard\Keyboard;
@@ -394,7 +395,9 @@ class ActionServices extends TextServices
             $text = "✅ رسید شما ارسال شد لطفا صبور باشید تا بررسی شود";
             $transaction->description = $this->getPhoto();
             $transaction->data = $paths;
+            $transaction->status = Transaction::STATUS_PENDING_ACCEPT_RECEIPT;
             $transaction->save();
+            dispatch(new SendMessageAccountingBot($transaction->id));
         }else{
             $text = "❌زمان ارسال رسید شما به پایان رسید لطفا مجداد فرایند را انجام دهید";
 
