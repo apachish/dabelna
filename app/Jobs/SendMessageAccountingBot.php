@@ -30,12 +30,15 @@ class SendMessageAccountingBot implements ShouldQueue
     public function handle(): void
     {
         $bot_accounting = Bot::where("title", "AccountingDabernaBot")->with("accessBot")->first();
+        logger("bot_accounting", [$bot_accounting]);
         if ($bot_accounting) {
             try {
                 $telegram_accounting = new Api($bot_accounting->token);
                 $order = Transaction::with("user")->find($this->order_id);
+                logger("order", [$order]);
                 if ($order) {
                     $admins = $bot_accounting->accessBot;
+                    logger("admins", [$admins]);
                     $message = " مبلغ ".$order->price." توسط کاربر ".data_get($order,'user.fullName')." واریز شد.";
                     foreach ($admins as $admin) {
 
@@ -53,6 +56,7 @@ class SendMessageAccountingBot implements ShouldQueue
                             'chat_id' => $admin->user_id,
                             'document' => InputFile::create($path_report, $name_file)
                         ]);
+                        logger("response", [$response,$name_file,$path_report]);
                         $send_accounting = $telegram_accounting->sendMessage(
                             [
                                 'chat_id' => $admin->user_id,
