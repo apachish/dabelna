@@ -52,11 +52,12 @@ class SendMessageAccountingBot implements ShouldQueue
                         $file = json_decode(data_get($order, "data"));
                         $path_report = storage_path("app/public/".data_get($file,'0'));
                         $name_file = "receipt_".data_get($order,'user.telegram_id')."_".data_get($order,'id').".jpg";
-                        $response = $telegram_accounting->sendDocument([
+                        logger("aa",[$name_file,$path_report]);
+                        $response = $telegram_accounting->sendPhoto([
                             'chat_id' => $admin->user_id,
-                            'document' => InputFile::create($path_report, $name_file)
+                            'photo' => InputFile::create($path_report, $name_file)
                         ]);
-                        logger("response", [$response,$name_file,$path_report]);
+                        logger("response", [$response]);
                         $send_accounting = $telegram_accounting->sendMessage(
                             [
                                 'chat_id' => $admin->user_id,
