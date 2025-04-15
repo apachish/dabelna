@@ -39,7 +39,9 @@ class SendMessageAccountingBot implements ShouldQueue
                 if ($order) {
                     $admins = $bot_accounting->accessBot;
                     logger("admins", [$admins]);
-                    $message = " مبلغ ".$order->price." توسط کاربر ".data_get($order,'user.fullName')." واریز شد.";
+                    $message = " مبلغ ".getPriceFormat(data_get($order,'price',0));
+                    $message .= " توسط کاربر ".data_get($order,'user.fullName')." واریز شد . ";
+                    logger($message);
                     foreach ($admins as $admin) {
 
                         $this->send = Message::create([
