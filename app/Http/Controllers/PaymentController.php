@@ -126,10 +126,11 @@ class PaymentController extends Controller
         if($transaction){
             if($transaction_apachish){
                 if(data_get($transaction_apachish,"status") ==  "successful"){
-                    $transaction->status = "completed";
+                    $transaction->status = Transaction::STATUS_COMPLETED;
                     $transaction->update();
                     $ref_id = data_get($result,'data.ref_id');
                     $wallet = Wallet::create([
+                        "transaction_id"=>data_get($transaction,'id'),
                         "user_id"=>data_get($transaction,'user_id'),
                         "amount"=>data_get($transaction,'amount'),
                         "type"=>Wallet::TYPE_RIAL,
@@ -143,19 +144,19 @@ class PaymentController extends Controller
                         $text = "✅ حساب شما به مبلغ";
                         $text .= data_get($transaction,'amount');
                         $text .= "شارژ شد";
-                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"user_id"), 'text' => $text]);
+                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"telegram_id"), 'text' => $text]);
                     }
 
 
                 }else{
-                    $transaction->status = "failed";
+                    $transaction->status = Transaction::STATUS_FAILD;
                     $transaction->update();
                     if($bot){
                         $this->telegram = new Api(data_get($bot,"token"));
                         $text = "❌ حساب شما به مبلغ";
                         $text .= data_get($transaction,'amount');
                         $text .= "موفق به پرداخت نشد";
-                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"user_id"), 'text' => $text]);
+                        $this->telegram->sendMessage(['chat_id' => data_get($transaction->user,"telegram_id"), 'text' => $text]);
                     }
                 }
             }
