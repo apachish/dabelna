@@ -601,7 +601,7 @@ class TextServices
                 if($help)
                 {
                     logger("help",[$help]);
-                    foreach (data_get($help,"help_link") as $help_link)
+                    foreach (data_get($help,"help_link",[]) as $help_link)
                     {
                         $keyboard[] = [
                             ['text' => data_get($help_link,'title',"لینک"), 'url' => data_get($help_link,"value")],
