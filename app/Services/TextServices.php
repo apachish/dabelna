@@ -600,6 +600,7 @@ class TextServices
                 $help = Setting::whereIn("key", ["help","help_link"])->where("status",true)->get()->keyBy("key");
                 if($help)
                 {
+                    logger("help",[$help]);
                     foreach (data_get($help,"help_link") as $help_link)
                     {
                         $keyboard[] = [
