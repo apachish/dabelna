@@ -584,9 +584,16 @@ class TextServices
                     $this->telegram_services->sendMessage($this->user_id, $rule->value);
                 break;
            case   "تماس با پشتیبانی\xF0\x9F\x93\x9E":
-                $support = Setting::where("key", "support")->where("status",true)->first();
+                $support = Setting::whereIn("key", ["support","link_support"])->where("status",true)->get()->keyBy("key");
                 if($support)
-                    $this->telegram_services->sendMessage($this->user_id, $support->value);
+                {
+                    $message = data_get($support,"support.value");
+                    $keyboard[0] = [
+                        ['text' => data_get($support,'link_support.title',"پشتیبانی"), 'url' => data_get($support,"link_support.value")],
+                    ];
+                    $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+
+                }
                 break;
 
             case "راهنما\xE2\x81\x89":
