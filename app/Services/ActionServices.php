@@ -302,10 +302,62 @@ class ActionServices extends TextServices
         $text = "📌 جهت افزایش اعتبار کیف پول مبلغ مورد نظر را به تتر ارسال کنید";
         $keyboard = [];
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
-        cache()->forget("sendTypeCharging_" .  $this->getUserId());
+        cache()->forget("increase_in_inventory_" .  $this->getUserId());
         cache()->set("ChargingUsdt_" .  $this->getUserId(), $message_id);
         cache()->set($this->getKeyCache() . $this->getUserId(), "charging_usdt" );
     }
+
+    public function withdrawalUsdt()
+    {
+//        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
+        $message_id = cache()->get("increase_in_inventory_" .  $this->getUserId());
+        $text = "  📌 جهت  برداشت از کیف پول مبلغ مورد نظر را به تتر ارسال کنید مبلغ یک تتر هزینه انتقال از هزینه واریزی کم می شود";
+        $keyboard = [];
+        $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        cache()->forget("increase_in_inventory_" .  $this->getUserId());
+        cache()->set($this->getKeyCache() . $this->getUserId(), "withdrawal_usdt_" );
+    }
+    public function checkGiveUsdt()
+    {
+        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+        $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
+        $usdt  = ($wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount"))-1;
+        $price = $this->getMessageCache();
+        if(!is_numeric($price)){
+            $text = "⚠️مبلغ وارد شد فقط عدد باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            return false;
+        }
+        if($usdt < $price){
+            $text = "⚠️مبلغ وارد شد از کیف پول شما بیشتر می باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            return false;
+        }
+        $text = "📌 لطفا دقت فرمایید  کیف پول USDT در شبکه TRC20 را وارد فرمایید ";
+        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "get_withdrawal_usdt_" );
+    }
+    public function checkWalletUsdt()
+    {
+        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+        $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
+        $usdt  = ($wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount"))-1;
+        $price = $this->getMessageCache();
+        if(!is_numeric($price)){
+            $text = "⚠️مبلغ وارد شد فقط عدد باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            return false;
+        }
+        if($usdt < $price){
+            $text = "⚠️مبلغ وارد شد از کیف پول شما بیشتر می باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            return false;
+        }
+        $text = "📌 لطفا دقت فرمایید  کیف پول USDT در شبکه TRC20 را وارد فرمایید ";
+        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "get_withdrawal_usdt_" );
+    }
+
 
     public function checkPayUsdt()
     {

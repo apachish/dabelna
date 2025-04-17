@@ -328,7 +328,8 @@ class TextServices
             "\xF0\x9F\x93\x9Aقوانین",
             "راهنما\xE2\x81\x89",
             "قوانین را خواندم و آنها را پذیرفتم",
-            "شروع بازی\xF0\x9F\x8E\xB0"
+            "شروع بازی\xF0\x9F\x8E\xB0",
+            "تماس با پشتیبانی\xF0\x9F\x93\x9E"
         ];
         if (in_array($this->message, $accept))
             return true;
@@ -348,6 +349,7 @@ class TextServices
             "Game_rial_",
             "Game_usdt_",
             "increase_in_inventory_",
+            "withdrawal_",
             "goGateway_",
             "get_payment_receipt_",
             "get_card_"
@@ -369,6 +371,8 @@ class TextServices
             "Charging_rial",
             "charging_usdt",
             "charging_usdt_getFile",
+            "get_withdrawal_usdt_",
+            "withdrawal_usdt_",
 
         ];
 
@@ -462,6 +466,8 @@ class TextServices
             $this->ruleAccept();
         elseif(str_contains($this->data, "increase_in_inventory_"))
             $this->ChargingUsdt();
+        elseif(str_contains($this->data, "withdrawal_"))
+            $this->withdrawalUsdt();
         elseif(str_contains($this->data, "Charging_rial_"))
             $this->ChargingRial();
         elseif(str_contains($this->data, "Charging_usdt_"))
@@ -497,6 +503,10 @@ class TextServices
             $this->getPaymentReceipt();
         elseif (str_contains($this->message_cache, "charging_usdt"))
             $this->checkPayUsdt();
+        elseif (str_contains($this->message_cache, "get_withdrawal_usdt_"))
+            $this->checkWalletUsdt();
+        elseif (str_contains($this->message_cache, "withdrawal_usdt_"))
+            $this->checkGiveUsdt();
         elseif (str_contains($this->message_cache, "add_customer_mobile"))
             $this->addCustomer();
         elseif (str_contains($this->message_cache, "add_mobile"))
@@ -528,13 +538,14 @@ class TextServices
                 break;
             case "\xF0\x9F\x92\xB3کیف پول":
                 $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+                $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
                 $wallet_rial = data_get($this->getUser(), 'walletsRial');
                 $rial = 0;
                 $usdt = 0;
                 if($wallet_rial)
                     $rial = $wallet_rial->sum("amount");
                 if($wallet_rial)
-                    $usdt  = $wallet_usdt->sum("amount");
+                    $usdt  = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
 
                 $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
                 $message .= "\n";
@@ -561,6 +572,9 @@ class TextServices
                 $keyboard[0] = [
                     ['text' => "افزایش موجودی", 'callback_data' => "increase_in_inventory_" . $this->getUser()->id],
                 ];
+                $keyboard[1] = [
+                    ['text' => "برداشت وجه", 'callback_data' => "withdrawal_" . $this->getUser()->id],
+                ];
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                 cache()->set("increase_in_inventory_" . $this->user_id, $message_id);
                 break;
@@ -569,11 +583,26 @@ class TextServices
                 if($rule)
                     $this->telegram_services->sendMessage($this->user_id, $rule->value);
                 break;
+           case   "تماس با پشتیبانی\xF0\x9F\x93\x9E":
+                $support = Setting::where("key", "support")->where("status",true)->first();
+                if($support)
+                    $this->telegram_services->sendMessage($this->user_id, $support->value);
+                break;
 
             case "راهنما\xE2\x81\x89":
-                $help = Setting::where("key", "help")->where("status",true)->first();
+                $help = Setting::whereIn("key", ["help","help_link"])->where("status",true)->get()->keyBy("key");
                 if($help)
+                {
+                    foreach (data_get($help,"help_link") as $help_link)
+                    {
+                        $keyboard[] = [
+                            ['text' => data_get($help_link,'title',"لینک"), 'url' => data_get($help_link,"value")],
+                        ];
+                    }
+                    $message =  data_get($help,"help.value");
+                    $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                     $this->telegram_services->sendMessage($this->user_id, $help->value);
+                }
 
                 break;
             default:
