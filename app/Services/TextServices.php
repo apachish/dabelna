@@ -539,31 +539,19 @@ class TextServices
             case "\xF0\x9F\x92\xB3کیف پول":
                 $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
                 $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
-                $wallet_rial = data_get($this->getUser(), 'walletsRial');
-                $rial = 0;
                 $usdt = 0;
-                if($wallet_rial)
-                    $rial = $wallet_rial->sum("amount");
-                if($wallet_rial)
+                if($wallet_usdt)
                     $usdt  = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
 
                 $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
                 $message .= "\n";
-                $message .=  "🔢 ایدی عددی شما : ";
+                $message .=  "🔢 کد معرف شما : ";
                 $message .=  $this->getUserId() ;
                 $message .= "\n";
                 $message .= "👥 تعداد زیرمجموعه ها : ";
                 $message .= data_get($this->getUser(),"children_count",0);
                 $message .= "\n";
-                $message .= "🛍 تعداد بلیط خریداری شده : ";
-                $message .= "\n";
-                $message .= "👈🏻 پرداخت های موفق: ".data_get($this->getUser(),"transactions_completed_count",0). " عدد";
-                $message .= "\n";
-                $message .= "🟡 فاکتور های پرداخت نشده : ". data_get($this->getUser(),"transactions_failed_count",0)." عدد";
-                $message .= "\n";
                 $message .= "💎 موجودی شما :  ";
-                $message .= "\n";
-                $message .= "       ".getPriceFormat($rial)." ریال "."\n";
                 $message .= "       ".getPriceFormat($usdt)." تتر "."\n";
 
 
