@@ -311,7 +311,7 @@ class ActionServices extends TextServices
     {
 //        $message_id = cache()->get("sendTypeCharging_" .  $this->getUserId());
         $message_id = cache()->get("increase_in_inventory_" .  $this->getUserId());
-        $text = "  📌 جهت  برداشت از کیف پول مبلغ مورد نظر را به تتر ارسال کنید مبلغ یک تتر هزینه انتقال از هزینه واریزی کم می شود";
+        $text = "  📌 جهت  برداشت از کیف پول مبلغ مورد نظر را به تتر ارسال کنید مبلغ کارمزد انتقال از کیف پول شما کم می شود";
         $keyboard = [];
         $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
         cache()->forget("increase_in_inventory_" .  $this->getUserId());
@@ -598,7 +598,7 @@ class ActionServices extends TextServices
         $game = Game::where("type", $type)->with(["cards" => function ($query) use ($id) {
             $query->whereNull("player_id");
             $query->where("id",$id);
-        }])->where("status", Game::STATUS_WAITING)
+        }])->where("status", Game::STATUS_WAITING_PLAYER)
             ->lockForUpdate();
         if($game_id)
             $game = $game->find($game_id);
