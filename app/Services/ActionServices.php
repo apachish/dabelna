@@ -604,6 +604,7 @@ class ActionServices extends TextServices
             $game = $game->find($game_id);
         else
             $game = $game->first();
+        logger("game",[$type,$game,$game_id]);
 
         if ($game) {
 
