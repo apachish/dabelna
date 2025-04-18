@@ -110,6 +110,25 @@ class ActionServices extends TextServices
         $response = TelegramServices::menu($this->telegram, $keyboard, $this->getUser(), $text);
     }
 
+    public function addAgent()
+    {
+        $agent = $this->getMessage();
+        $agent_player = UserTelegram::where("telegram_id",$agent)->first();
+        if($agent_player){
+            $this->getUser()->agent_id = $agent_player->id;
+            $this->getUser()->update();
+            $text = "کاربر ";
+            $text .= $agent_player->fullName;
+            $text .= " به عنوان معرف شما ثبت گردید";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            $this->startMessage();
+        }else{
+            $text = "کد معرف وارد شده نامعتبر می باشد";
+            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+
+        }
+    }
+
 
 
     public function sendTypeCharging()

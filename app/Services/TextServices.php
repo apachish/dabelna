@@ -514,7 +514,7 @@ class TextServices
         elseif (str_contains($this->message_cache, "add_fullName"))
             $this->addFullName();
         elseif (str_contains($this->message_cache, "pending_agent")) {
-
+            $this->addAgent();
         }
     }
 
