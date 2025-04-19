@@ -330,7 +330,8 @@ class TextServices
             "راهنما\xE2\x81\x89",
             "قوانین را خواندم و آنها را پذیرفتم",
             "شروع بازی\xF0\x9F\x8E\xB0",
-            "تماس با پشتیبانی\xF0\x9F\x93\x9E"
+            "تماس با پشتیبانی\xF0\x9F\x93\x9E",
+            "کانال ارتباطی\xF0\x9F\x93\xA1"
         ];
         if (in_array($this->message, $accept))
             return true;
@@ -441,6 +442,7 @@ class TextServices
             case "\xF0\x9F\x93\x9Aقوانین":
             case "راهنما\xE2\x81\x89":
             case "تماس با پشتیبانی\xF0\x9F\x93\x9E":
+            case "کانال ارتباطی\xF0\x9F\x93\xA1":
                 $this->getAction();
                 break;
             case  "/start":
@@ -587,6 +589,16 @@ class TextServices
 
                 }
                 break;
+                case  "کانال ارتباطی\xF0\x9F\x93\xA1":
+                    $message = "کانال برای اعلام نتایج و خبر های بازی دنبال کنید:";
+                    $keyboard[0] = [
+                        ['text' => "\xF0\x9F\x93\xA2	کانال تلگرام", 'url' => env("CHANEL_URL")],
+                        ['text' => "\xF0\x9F\x8E\xA6	یوتیوب", 'url' => env("CHANEL_YOUTUBE_URL")],
+                        ['text' => "\xF0\x9F\x8E\xAC	اینستاگرام", 'url' => env("CHANEL_INSTAGRAM_URL")],
+                    ];
+                    $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+
+                break;
 
             case "راهنما\xE2\x81\x89":
                 $help = Setting::whereIn("key", ["help","help_link"])->where("status",true)->get()->keyBy("key");
@@ -626,7 +638,7 @@ class TextServices
             ['text' => "راهنما\xE2\x81\x89"],
         ];
         $keyboard_menu[$i++] = [
-            ['text' => "کانال اعلام نتایج\xF0\x9F\x93\x9E","url"=>env("CHANEL_URL")],
+            ['text' => "کانال ارتباطی\xF0\x9F\x93\xA1"],
         ];
         $keyboard_menu[$i++] = [
             ['text' => "تماس با پشتیبانی\xF0\x9F\x93\x9E"],
