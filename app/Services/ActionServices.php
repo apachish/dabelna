@@ -541,7 +541,7 @@ class ActionServices extends TextServices
 
         logger("gamee",[$game,$game_id,$type]);
         if($game) {
-            if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
+            if(($type == Game::TYPE_USDT && $wallet_usdt && $wallet_usdt > data_get($game,"price")) || ($type == Game::TYPE_TEST)) {
                 $keyboard = [];
                 $m = 0;
                 $k = 0;
