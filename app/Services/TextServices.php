@@ -8,6 +8,7 @@ use Apachish\Dabelna\App\Models\Game;
 use Apachish\Dabelna\App\Models\Setting;
 use Apachish\Dabelna\App\Models\TextTelegram;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use Illuminate\Support\Str;
 use Telegram\Bot\Api;
 
 class TextServices
@@ -48,7 +49,7 @@ class TextServices
         $this->token = $token;
 
         $this->bot = cache()->remember("token_" . $token, now()->addDay(), function () {
-            return Bot::where('token', $this->token)->where("status",true)->first();
+            return Bot::where('token', $this->token)->where("status", true)->first();
         });
         $this->telegram = new Api($this->bot->token);
 
@@ -141,7 +142,6 @@ class TextServices
     }
 
 
-
     /**
      * @param mixed $user
      */
@@ -152,7 +152,7 @@ class TextServices
             ->withCount("transactionsCompleted")
             ->withCount("transactionsFailed")
             ->withCount("transactions")
-            ->with(["transactions","walletsRial","walletsUsdt"])
+            ->with(["transactions", "walletsRial", "walletsUsdt"])
             ->withTrashed()->first();
         if ($user_telegram == null && $this->user_id) {
             $update = $this->update;
@@ -292,10 +292,11 @@ class TextServices
 
         // data_get($cache_data, "title")
     }
-    /**
-     * @return mixed
 
     /**
+     * @return mixed
+     *
+     * /**
      * @return mixed
      */
     public function getContact()
@@ -386,19 +387,19 @@ class TextServices
 
     public function actionByMessage()
     {
-        logger("user",[$this->user]);
+        logger("user", [$this->user]);
         if ($this->getMessage() == "قوانین را خواندم و آنها را پذیرفتم") {
             $this->ruleAccept();
             return true;
-        }elseif ($this->getMessage() == "شروع بازی\xF0\x9F\x8E\xB0") {
+        } elseif ($this->getMessage() == "شروع بازی\xF0\x9F\x8E\xB0") {
             $this->startMessage();
             return true;
-        }elseif (!$this->user->fullName) {
+        } elseif (!$this->user->fullName) {
             $text = " لطفا نام کاربری خود را وارد نمایید";
             cache()->set($this->key_cache . $this->user_id, "add_fullName");
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => $text]);
             return true;
-        } elseif (false &&  !$this->user->mobile) {
+        } elseif (false && !$this->user->mobile) {
             $text = "لطفا شماره خود را به اشتراک بگذارید";
             $this->telegram_services->sendRequestContactButton($this->getUserId(), $text);
             cache()->set($this->key_cache . $this->user_id, "rule_accept");
@@ -406,7 +407,7 @@ class TextServices
 
         } elseif (!$this->user->accept_rule) {
             $text = "لطفا قوانین را مطالعه فرمایید";
-            $rule = Setting::where("key", "rule")->where("status",true)->first();
+            $rule = Setting::where("key", "rule")->where("status", true)->first();
 
             $text .= $rule ? $rule->value : "";
             $keyboard[0][0] = ['text' => "قوانین را خواندم و آنها را پذیرفتم"];
@@ -415,7 +416,6 @@ class TextServices
             return true;
 
         }
-
 
 
         cache()->forget($this->key_cache . $this->user_id);
@@ -467,23 +467,21 @@ class TextServices
             $this->telegram->sendMessage(['chat_id' => $this->user_id, 'text' => 'متن نا معتبر می باشد']);
         elseif (str_contains($this->data, "rule_accept"))
             $this->ruleAccept();
-        elseif(str_contains($this->data, "increase_in_inventory_"))
+        elseif (str_contains($this->data, "increase_in_inventory_"))
             $this->ChargingUsdt();
-        elseif(str_contains($this->data, "withdrawal_"))
+        elseif (str_contains($this->data, "withdrawal_"))
             $this->withdrawalUsdt();
-        elseif(str_contains($this->data, "Charging_rial_"))
+        elseif (str_contains($this->data, "Charging_rial_"))
             $this->ChargingRial();
-        elseif(str_contains($this->data, "Charging_usdt_"))
+        elseif (str_contains($this->data, "Charging_usdt_"))
             $this->ChargingUsdt();
-        elseif(str_contains($this->data, "goGateway_"))
+        elseif (str_contains($this->data, "goGateway_"))
             $this->goGateway();
-        elseif(str_contains($this->data, "get_payment_receipt_"))
+        elseif (str_contains($this->data, "get_payment_receipt_"))
             $this->pendingSendFile();
-        elseif (str_contains($this->data, "Game_test_"))
-        {
+        elseif (str_contains($this->data, "Game_test_")) {
             $this->listCard(Game::TYPE_TEST);
-        }
-        elseif (str_contains($this->data, "Game_rial_"))
+        } elseif (str_contains($this->data, "Game_rial_"))
             $this->gameRial();
         elseif (str_contains($this->data, "Game_usdt_"))
             $this->listGame();
@@ -539,29 +537,29 @@ class TextServices
                     ['text' => "بازی", 'callback_data' => "Game_usdt_" . $this->getUser()->id],
                 ];
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
-                cache()->set("buy_game_" .  $this->getUserId(), $message_id);
+                cache()->set("buy_game_" . $this->getUserId(), $message_id);
 
                 break;
             case "\xF0\x9F\x92\xB3کیف پول":
                 $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
                 $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
                 $usdt = 0;
-                if($wallet_usdt)
-                    $usdt  = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
+                if ($wallet_usdt)
+                    $usdt = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
 
                 $message = "🖥 اطلاعات حساب کاربری شما به شرح زیر میباشد :";
                 $message .= "\n";
-                $message .=  "🔢 کد معرف شما : ";
-                $message .=  $this->getUserId() ;
+                $message .= "🔢 کد معرف شما : ";
+                $message .= $this->getUserId();
                 $message .= "\n";
                 $message .= "👥 تعداد زیرمجموعه ها : ";
-                $message .= data_get($this->getUser(),"children_count",0);
+                $message .= data_get($this->getUser(), "children_count", 0);
                 $message .= "\n";
                 $message .= "💎 موجودی شما :  ";
-                $message .= "       ".getPriceFormat($usdt)." تتر "."\n";
+                $message .= "       " . getPriceFormat($usdt) . " تتر " . "\n";
 
 
-                $message .= toJalali(now(),"Y/m/d H:i:s");
+                $message .= toJalali(now(), "Y/m/d H:i:s");
 
                 $keyboard[0] = [
                     ['text' => "افزایش موجودی", 'callback_data' => "increase_in_inventory_" . $this->getUser()->id],
@@ -573,45 +571,42 @@ class TextServices
                 cache()->set("increase_in_inventory_" . $this->user_id, $message_id);
                 break;
             case "\xF0\x9F\x93\x9Aقوانین":
-                $rule = Setting::where("key", "rule")->where("status",true)->first();
-                if($rule)
+                $rule = Setting::where("key", "rule")->where("status", true)->first();
+                if ($rule)
                     $this->telegram_services->sendMessage($this->user_id, $rule->value);
                 break;
-           case   "تماس با پشتیبانی\xF0\x9F\x93\x9E":
-                $support = Setting::whereIn("key", ["support","link_support"])->where("status",true)->get()->keyBy("key");
-                if($support)
-                {
-                    $message = data_get($support,"support.value");
+            case   "تماس با پشتیبانی\xF0\x9F\x93\x9E":
+                $support = Setting::whereIn("key", ["support", "link_support"])->where("status", true)->get()->keyBy("key");
+                if ($support) {
+                    $message = data_get($support, "support.value");
                     $keyboard[0] = [
-                        ['text' => data_get($support,'link_support.title',"پشتیبانی"), 'url' => data_get($support,"link_support.value")],
+                        ['text' => data_get($support, 'link_support.title', "پشتیبانی"), 'url' => data_get($support, "link_support.value")],
                     ];
                     $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
 
                 }
                 break;
-                case  "کانال ارتباطی\xF0\x9F\x93\xA1":
-                    $message = "کانال برای اعلام نتایج و خبر های بازی دنبال کنید:";
-                    $keyboard[0] = [
-                        ['text' => "\xF0\x9F\x93\xA2	کانال تلگرام", 'url' => env("CHANEL_URL")],
-                        ['text' => "\xF0\x9F\x8E\xA6	یوتیوب", 'url' => env("CHANEL_YOUTUBE_URL")],
-                        ['text' => "\xF0\x9F\x8E\xAC	اینستاگرام", 'url' => env("CHANEL_INSTAGRAM_URL")],
-                    ];
-                    $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
+            case  "کانال ارتباطی\xF0\x9F\x93\xA1":
+                $message = "کانال برای اعلام نتایج و خبر های بازی دنبال کنید:";
+                $keyboard[0] = [
+                    ['text' => "\xF0\x9F\x93\xA2	کانال تلگرام", 'url' => env("CHANEL_URL")],
+                    ['text' => "\xF0\x9F\x8E\xA6	یوتیوب", 'url' => env("CHANEL_YOUTUBE_URL")],
+                    ['text' => "\xF0\x9F\x8E\xAC	اینستاگرام", 'url' => env("CHANEL_INSTAGRAM_URL")],
+                ];
+                $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
 
                 break;
 
             case "راهنما\xE2\x81\x89":
-                $help = Setting::whereIn("key", ["help","help_link"])->where("status",true)->get()->keyBy("key");
-                if($help)
-                {
-                    logger("help",[$help]);
-                    foreach (data_get($help,"help_link",[]) as $help_link)
-                    {
-                        $keyboard[] = [
-                            ['text' => data_get($help_link,'title',"لینک"), 'url' => data_get($help_link,"value")],
-                        ];
+                $help = Setting::where("key", "like", "help%")->where("status", true)->get()->keyBy("key");
+                if ($help) {
+                    foreach ($help as $key => $help_link) {
+                        if (Str::contains($key, "help_link"))
+                            $keyboard[] = [
+                                ['text' => data_get($help_link, 'title', "لینک"), 'url' => data_get($help_link, "value")],
+                            ];
                     }
-                    $message =  data_get($help,"help.value");
+                    $message = data_get($help, "help.value");
                     $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                     $this->telegram_services->sendMessage($this->user_id, $help->value);
                 }
@@ -687,6 +682,7 @@ class TextServices
 
         return false;
     }
+
     public function accessAdmin($type)
     {
         return $this->bot && $this->bot->accessBot ? $this->bot->accessBot->where("user_id", $this->user_id)->where("type", $type) : false;
