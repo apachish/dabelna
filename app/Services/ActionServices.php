@@ -530,19 +530,15 @@ class ActionServices extends TextServices
         $text .=" باقیمانده زیر را انتخاب کنید :";
         $text .= "\n";
         $text .= "\xE2\x80\xBC	احتمال دارد تا کلیک شما کاربر دیگری کارت دریافت کنند";
-        $game =  Game::where("id",Game::STATUS_WAITING_PLAYER)->where("type",$type)
+        $game =  Game::where("status",Game::STATUS_WAITING_PLAYER)->where("type",$type)
             ->with(["cards" => function ($query) {
                 $query->whereNull("player_id");
             }]);
         if($game_id > 0)
-        {
             $game = $game->find($game_id);
-        }
         else
-        {
-            logger("test",[$game->toSql()]);
             $game = $game->first();
-        }
+
         logger("gamee",[$game,$game_id,$type]);
         if($game) {
             if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
