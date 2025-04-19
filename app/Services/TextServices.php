@@ -4,6 +4,7 @@ namespace App\Services;
 
 
 use Apachish\Dabelna\App\Models\Bot;
+use Apachish\Dabelna\App\Models\Game;
 use Apachish\Dabelna\App\Models\Setting;
 use Apachish\Dabelna\App\Models\TextTelegram;
 use Apachish\Dabelna\App\Models\UserTelegram;
@@ -477,15 +478,18 @@ class TextServices
         elseif(str_contains($this->data, "get_payment_receipt_"))
             $this->pendingSendFile();
         elseif (str_contains($this->data, "Game_test_"))
-            $this->gameTest();
+        {
+            $this->listCard(Game::TYPE_TEST);
+        }
         elseif (str_contains($this->data, "Game_rial_"))
             $this->gameRial();
         elseif (str_contains($this->data, "Game_usdt_"))
             $this->listGame();
-        elseif (str_contains($this->data, "request_get_card_"))
-            $this->listCard();
         elseif (str_contains($this->data, "get_card_"))
             $this->gameUsdt();
+        elseif (str_contains($this->data, "request_get_card_"))
+            $this->listCard(Game::TYPE_USDT);
+
     }
 
     public function actionByCache()

@@ -520,7 +520,7 @@ class ActionServices extends TextServices
 
     }
 
-    public function listCard()
+    public function listCard($type)
     {
         $message_id = cache()->get("list_game_" .  $this->getUserId());
         $wallet_usdt = data_get($this->getUser(), 'walletsUsdt')->sum("amount");
@@ -531,21 +531,30 @@ class ActionServices extends TextServices
         $text .=" باقیمانده زیر را انتخاب کنید :";
         $text .= "\n";
         $text .= "\xE2\x80\xBC	احتمال دارد تا کلیک شما کاربر دیگری کارت دریافت کنند";
-        $game =  Game::where("id",Game::STATUS_WAITING_PLAYER)->where("type",Game::TYPE_USDT)
+        $game =  Game::where("id",Game::STATUS_WAITING_PLAYER)->where("type",$type)
             ->with(["cards" => function ($query) {
                 $query->whereNull("player_id");
-            }])
-            ->find($game_id);
+            }]);
+        if($game_id)
+            $game = $game->find($game_id);
+        else
+            $game = $game->first();
         if($game) {
             if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
                 $keyboard = [];
                 $m = 0;
                 $k = 0;
                 foreach ($game->cards as $i => $card) {
-                    $keyboard[$i][$m++] = [
+                    $keyboard[$m][$k] = [
                         'text' => data_get($card, "title"),
                         'callback_data' => "get_card_" . $game->id . "_" . $card->id,
                     ];
+                    $k++;
+                    if($i%5 ==0)
+                    {
+                        $m++;
+                        $k=0;
+                    }
                 }
                 $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
                 cache()->set("buy_game_" . $this->getUserId(), $message_id);
