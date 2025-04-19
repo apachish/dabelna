@@ -534,7 +534,7 @@ class ActionServices extends TextServices
             ->with(["cards" => function ($query) {
                 $query->whereNull("player_id");
             }]);
-        if($game_id)
+        if($game_id > 0)
             $game = $game->find($game_id);
         else
             $game = $game->first();
