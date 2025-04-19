@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Apachish\Dabelna\App\Models\Bot;
 use Apachish\Dabelna\App\Models\Game;
+use Apachish\Dabelna\App\Services\GameService;
 use Illuminate\Console\Command;
 
 class Test extends Command
@@ -27,13 +28,8 @@ class Test extends Command
      */
     public function handle()
     {
-        $game = Game::where("id", 4)->first();
-        $game->remaining_card = 0;
-        if ($game->isDirty()) {
-            logger('Game is dirty'); // یعنی قراره چیزی تغییر کنه
-            $game->save();
-        } else {
-            logger('Nothing to update');
-        }
+        $game_server = new GameService();
+        $game = Game::with("winners")->where("id", 4)->first();
+        $game_server->sendWinner($game);
     }
 }
