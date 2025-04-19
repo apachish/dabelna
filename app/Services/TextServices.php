@@ -626,6 +626,9 @@ class TextServices
             ['text' => "راهنما\xE2\x81\x89"],
         ];
         $keyboard_menu[$i++] = [
+            ['text' => "کانال اعلام نتایج\xF0\x9F\x93\x9E","url"=>env("CHANEL_URL")],
+        ];
+        $keyboard_menu[$i++] = [
             ['text' => "تماس با پشتیبانی\xF0\x9F\x93\x9E"],
         ];
         return $keyboard_menu;
