@@ -648,7 +648,8 @@ class ActionServices extends TextServices
                         $card->player_id = $this->getUser()->id;
                         $card->update();
 
-                        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+                        $keyboard =[];
+                        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
                         $response = $this->telegram->sendDocument([
                             'chat_id' => $this->getUserId(),
                             'document' => InputFile::create($path_report, $name_file . ".pdf")
