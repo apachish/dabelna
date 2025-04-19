@@ -488,11 +488,11 @@ class ActionServices extends TextServices
     {
         $this->card(Game::TYPE_RIAL);
     }
-    public function gameUsdt()
+    public function getCard()
     {
         $data = str_replace("get_card_","",$this->getData());
         $array = explode("_", $data);
-        $this->card(Game::TYPE_USDT,data_get($array,0),data_get($array,1));
+        $this->card(data_get($array,0),data_get($array,1));
     }
 
     public function listGame()
@@ -620,10 +620,10 @@ class ActionServices extends TextServices
      * @return void
      * @throws \Telegram\Bot\Exceptions\TelegramSDKException
      */
-    public function card($type,$game_id=null,$id=null): void
+    public function card($game_id=null,$id=null): void
     {
         $message_id = cache()->get("buy_game_" .  $this->getUserId());
-        $game = Game::where("type", $type)->with(["cards" => function ($query) use ($id) {
+        $game = Game::with(["cards" => function ($query) use ($id) {
             $query->whereNull("player_id");
             if($id)
                 $query->where("id",$id);
@@ -633,7 +633,7 @@ class ActionServices extends TextServices
             $game = $game->find($game_id);
         else
             $game = $game->first();
-        logger("game",[$type,$game,$game_id]);
+        logger("game",[$game,$game_id]);
 
         if ($game) {
 
