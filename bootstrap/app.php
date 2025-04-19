@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->command("app:create-card-dobrna-game")->daily();
+        $schedule->command("app:create-card-dobrna-game")->everyMinute();
     })
     ->withMiddleware(function (Middleware $middleware) {
         //
