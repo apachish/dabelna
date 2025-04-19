@@ -669,12 +669,14 @@ class ActionServices extends TextServices
 
             } else {
                 $text = "کارت این بازی تمام شد منتظر بازی جدید باشید";
-                $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-
+                $keyboard =[];
+                $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
             }
         } else {
             $text = "در حال حاضر بازی فعال نمی باشد";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
+            $keyboard =[];
+
+            $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
 
         }
     }
