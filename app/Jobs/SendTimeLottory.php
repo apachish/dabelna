@@ -27,12 +27,15 @@ class SendTimeLottory implements ShouldQueue
     public function handle(): void
     {
         $game = Game::with("cards.player")->find($this->gmae_id);
-        if($game && ata_get($game,"lottery_date")){
+        if($game && data_get($game,"lottery_date")){
             $bot = Bot::where("title","DabernaGameBot")->first();
             if($bot){
                 $telegram = new Api($bot->token);
 
             }
+            $text = "\xF0\x9F\x8E\xB0	";
+            $text   .= "با توجه به تکمیل بازی "."\n";
+            $text  .= $game->id."\n";
             $text  = "زمان برگزاری قرعه کشی بازی";
             $text  .= " ". $game->title." ";
             $text .= " :"."\n";
@@ -40,6 +43,9 @@ class SendTimeLottory implements ShouldQueue
 
             if(data_get($bot,"chanel_id"))
                 $telegram->sendMessage(['chat_id' => data_get($bot,"chanel_id"), 'text' => $text]);
+            foreach(data_get($game,'cards') as $card){
+                $telegram->sendMessage(['chat_id' => data_get($card,'player.telegram_id'), 'text' => $text]);
+            }
         }
 
 
