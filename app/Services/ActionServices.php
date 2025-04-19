@@ -515,14 +515,13 @@ class ActionServices extends TextServices
             ];
         }
         $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
-        cache()->set("list_game_" .  $this->getUserId(), $message_id);
-        cache()->forget("buy_game_" .  $this->getUserId());
+        cache()->set("buy_game_" .  $this->getUserId(), $message_id);
 
     }
 
     public function listCard($type)
     {
-        $message_id = cache()->get("list_game_" .  $this->getUserId());
+        $message_id = cache()->get("buy_game_" .  $this->getUserId());
         $wallet_usdt = data_get($this->getUser(), 'walletsUsdt')->sum("amount");
 
         $game_id  = (int)str_replace("request_get_card_","",$this->getData());
@@ -539,6 +538,7 @@ class ActionServices extends TextServices
             $game = $game->find($game_id);
         else
             $game = $game->first();
+        logger("gamee",[$game,$game_id,$type]);
         if($game) {
             if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
                 $keyboard = [];
@@ -558,7 +558,6 @@ class ActionServices extends TextServices
                 }
                 $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
                 cache()->set("buy_game_" . $this->getUserId(), $message_id);
-                cache()->forget("list_game_" . $this->getUserId());
             }else{
                 $text = "موجود کاربری شما کافی نمی باشد";
                 $keyboard =[];
