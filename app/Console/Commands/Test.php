@@ -27,6 +27,13 @@ class Test extends Command
      */
     public function handle()
     {
-        Game::where("id",4)->update(["remaining_card"=>0]);
+        $game = Game::where("id", 4)->first();
+        $game->remaining_card = 0;
+        if ($game->isDirty()) {
+            logger('Game is dirty'); // یعنی قراره چیزی تغییر کنه
+            $game->save();
+        } else {
+            logger('Nothing to update');
+        }
     }
 }
