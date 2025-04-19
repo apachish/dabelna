@@ -535,9 +535,14 @@ class ActionServices extends TextServices
                 $query->whereNull("player_id");
             }]);
         if($game_id > 0)
+        {
             $game = $game->find($game_id);
+        }
         else
+        {
+            logger("test",[$game->toSql()]);
             $game = $game->first();
+        }
         logger("gamee",[$game,$game_id,$type]);
         if($game) {
             if($wallet_usdt && $wallet_usdt > data_get($game,"price")) {
