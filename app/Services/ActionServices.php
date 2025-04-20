@@ -627,6 +627,7 @@ class ActionServices extends TextServices
     public function card($game_id=null,$id=null): bool
     {
         $message_id = cache()->get("buy_game_" .  $this->getUserId());
+        cache()->forget("buy_game_" .  $this->getUserId());
         $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
         $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
         $usdt = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
