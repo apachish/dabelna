@@ -490,7 +490,7 @@ class ActionServices extends TextServices
     }
     public function getCard()
     {
-        $data = str_replace("get_card_","",$this->getData());
+        $data = str_replace("take_card_","",$this->getData());
         $array = explode("_", $data);
         $this->card(data_get($array,0),data_get($array,1));
     }
@@ -548,7 +548,7 @@ class ActionServices extends TextServices
                 foreach ($game->cards as $i => $card) {
                     $keyboard[$m][$k] = [
                         'text' => data_get($card, "title"),
-                        'callback_data' => "get_card_" . $game->id . "_" . $card->id,
+                        'callback_data' => "take_card_" . $game->id . "_" . $card->id,
                     ];
                     $k++;
                     if($i%4 ==0)

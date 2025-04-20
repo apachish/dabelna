@@ -355,7 +355,8 @@ class TextServices
             "withdrawal_",
             "goGateway_",
             "get_payment_receipt_",
-            "get_card_"
+            "request_get_card_",
+            "take_card_"
 
         ];
 
@@ -485,10 +486,11 @@ class TextServices
             $this->gameRial();
         elseif (str_contains($this->data, "Game_usdt_"))
             $this->listGame();
-//        elseif (str_contains($this->data, "get_card_"))
-//            $this->getCard();
         elseif (str_contains($this->data, "request_get_card_"))
             $this->listCard(Game::TYPE_USDT);
+        elseif (str_contains($this->data, "take_card_"))
+            $this->getCard();
+
 
     }
 
