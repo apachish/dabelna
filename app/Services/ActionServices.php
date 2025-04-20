@@ -551,7 +551,7 @@ class ActionServices extends TextServices
                         'callback_data' => "get_card_" . $game->id . "_" . $card->id,
                     ];
                     $k++;
-                    if($i%5 ==0)
+                    if($i%4 ==0)
                     {
                         $m++;
                         $k=0;
