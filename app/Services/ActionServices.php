@@ -624,9 +624,12 @@ class ActionServices extends TextServices
      * @return void
      * @throws \Telegram\Bot\Exceptions\TelegramSDKException
      */
-    public function card($game_id=null,$id=null): void
+    public function card($game_id=null,$id=null): bool
     {
         $message_id = cache()->get("buy_game_" .  $this->getUserId());
+        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+        $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
+        $usdt = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
         $game = Game::with(["cards" => function ($query) use ($id) {
             $query->whereNull("player_id");
             if($id)
@@ -640,7 +643,12 @@ class ActionServices extends TextServices
         logger("game",[$game,$game_id]);
 
         if ($game) {
-
+            if(data_get($game,"price") > 0 && $wallet_usdt && $usdt < data_get($game,"price")){
+                $text = "موجودی حساب شما کافی نمی باشد";
+                $keyboard =[];
+                $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                return false;
+            }
             if ($game->cards->count()) {
                 $card = $id?$game->cards->where("id",$id)->first():$game->cards->random(1)->first();
                 if($card) {
@@ -669,10 +677,13 @@ class ActionServices extends TextServices
                             $description .= "بازی شماره" . $game->id . " نوع بازی :" . $game->title . "خرید";
                             $this->reduceCost($game->price, $description);
                             DB::commit();
+                            return true;
+
                         }
                     }catch (\Exception $exception){
                         logger("getCard",["message"=>$exception->getMessage(),"code"=>$exception->getCode()]);
                         DB::rollback();
+                        return false;
 
                     }
                 }else{
@@ -699,6 +710,7 @@ class ActionServices extends TextServices
             $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
 
         }
+        return false;
     }
 
     public function reduceCost($amount,$description)
