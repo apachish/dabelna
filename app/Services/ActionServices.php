@@ -343,7 +343,7 @@ class ActionServices extends TextServices
         $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
         $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
         $usdt  = ($wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount"))-1;
-        $price = $this->getMessageCache();
+        $price = $this->getMessage();
         if(!is_numeric($price)){
             $text = "⚠️مبلغ وارد شد فقط عدد باشد";
             $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
