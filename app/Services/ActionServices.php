@@ -10,6 +10,7 @@ use Apachish\Dabelna\App\Models\Game;
 use Apachish\Dabelna\App\Models\Setting;
 use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use Apachish\Dabelna\App\Models\Wallet;
 use App\Jobs\SendMessageAccountingBot;
 use Illuminate\Support\Facades\Storage;
 use Telegram\Bot\FileUpload\InputFile;
@@ -655,6 +656,12 @@ class ActionServices extends TextServices
                             'document' => InputFile::create($path_report, $name_file . ".pdf")
                         ]);
                         $game->update();
+                        //if game amount
+                        $description = "کاربر ";
+                        $description .= $this->getUser()->fullName."(".$this->getUser()->telegram_id.")";
+                        $description .= "مبلغ:".getPriceFormat($game->price);
+                        $description .= "بازی شماره".$game->id ." نوع بازی :".$game->title."خرید";
+                        $this->reduceCost($game->price,$description);
                     }
                 }else{
                     if($id){
@@ -682,4 +689,25 @@ class ActionServices extends TextServices
         }
     }
 
+    public function reduceCost($amount,$description)
+    {
+        $transaction = Transaction::create([
+            "user_id"=>$this->getUser()->id,
+            "payment_method"=>Transaction::TYPE_WALLET,
+            "amount"=>$amount,
+            "status"=>Transaction::STATUS_WITHDRAW,
+            "data"=>null,
+            "description"=>$description
+        ]);
+        $wallet = Wallet::create([
+            "transaction_id"=>$transaction,
+            "user_id"=>$this->getUser()->id,
+            "amount"=>$amount,
+            "type"=>Wallet::TYPE_USDT,
+            "type_amount"=>Wallet::TYPE_AMOUNT_WITHDRAW,
+            "status"=>Wallet::STATUS_CONFIRMATION,
+            "description"=>$description,
+            "ref_id"=>null
+        ]);
+    }
 }
