@@ -64,7 +64,6 @@ class SendMessageAccountingBot implements ShouldQueue
                             [
                                 'chat_id' => $admin->user_id,
                                 'text' => $message,
-                                'parse_mode' => 'MarkdownV2'
                             ]);
                     }
                 }
