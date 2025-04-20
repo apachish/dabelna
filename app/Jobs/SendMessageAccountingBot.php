@@ -39,7 +39,7 @@ class SendMessageAccountingBot implements ShouldQueue
                 if ($order) {
                     $admins = $bot_accounting->accessBot;
                     logger("admins", [$admins]);
-                    $message = " مبلغ ".getPriceFormat(data_get($order,'price',0));
+                    $message = " مبلغ ".getPriceFormat(data_get($order,'amount',0));
                     $message .= " توسط کاربر ".data_get($order,'user.fullName')." واریز شد . ";
                     logger($message);
                     foreach ($admins as $admin) {
@@ -51,7 +51,7 @@ class SendMessageAccountingBot implements ShouldQueue
                             "text" => $message,
                             "request_id" => $this->order_id
                         ]);
-                        $file = json_decode(data_get($order, "data"));
+                        $file = data_get($order, "data");
                         $path_report = storage_path("app/public/".data_get($file,'2'));
                         $name_file = "receipt_".data_get($order,'user.telegram_id')."_".data_get($order,'id').".jpg";
                         logger("aa",[$name_file,$path_report]);
