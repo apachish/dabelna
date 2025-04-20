@@ -700,7 +700,7 @@ class ActionServices extends TextServices
             "description"=>$description
         ]);
         $wallet = Wallet::create([
-            "transaction_id"=>$transaction,
+            "transaction_id"=>$transaction->id,
             "user_id"=>$this->getUser()->id,
             "amount"=>$amount,
             "type"=>Wallet::TYPE_USDT,
