@@ -400,7 +400,7 @@ class ActionServices extends TextServices
 
         $transaction = Transaction::create([
             "user_id"=>$this->getUser()->id,
-            "payment_method"=>"wallet",
+            "payment_method"=>Transaction::TYPE_WALLET,
             "amount"=>$amount,
             "status"=>Transaction::STATUS_PENDING,
         ]);
