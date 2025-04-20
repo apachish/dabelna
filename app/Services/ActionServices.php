@@ -13,6 +13,7 @@ use Apachish\Dabelna\App\Models\UserTelegram;
 use Apachish\Dabelna\App\Models\Wallet;
 use App\Jobs\SendMessageAccountingBot;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Telegram\Bot\FileUpload\InputFile;
 use Telegram\Bot\Keyboard\Keyboard;
@@ -356,27 +357,36 @@ class ActionServices extends TextServices
         }
         $text = "📌 لطفا دقت فرمایید  کیف پول USDT در شبکه TRC20 را وارد فرمایید ";
         $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-        cache()->set($this->getKeyCache() . $this->getUserId(), "get_withdrawal_usdt_" );
+        cache()->set($this->getKeyCache() . $this->getUserId(), "get_withdrawal_usdt_".$price );
     }
     public function checkWalletUsdt()
     {
-        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
-        $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
-        $usdt  = ($wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount"))-1;
-        $price = $this->getMessageCache();
-        if(!is_numeric($price)){
-            $text = "⚠️مبلغ وارد شد فقط عدد باشد";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-            return false;
+        $amount = (float)str_replace("get_withdrawal_usdt_","",$this->getMessageCache());
+        $value = $this->getMessage();
+        $text = null;
+        if (!preg_match('/^T[a-zA-Z0-9]{33}$/', $value))
+            $text = "\xE2\x80\xBC	 کیف پول وارد شد در شبکه TRC20 نیست ";
+
+        try {
+            $response = Http::get("https://api.trongrid.io/v1/accounts/{$value}");
+            $description = $response->successful();
+        } catch (\Exception $e) {
+            $text = "\xE2\x80\xBC	 کیف پول وارد شد در شبکه TRC20 نیست ";
+
         }
-        if($usdt < $price){
-            $text = "⚠️مبلغ وارد شد از کیف پول شما بیشتر می باشد";
-            $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-            return false;
+        if($text == null){
+            Transaction::create([
+                "user_id"=>$this->getUser()->id,
+                "payment_method"=>Transaction::TYPE_WALLET,
+                "amount"=>$amount,
+                "status"=>Transaction::STATUS_PENDING_ACCEPT_WITHDRAW,
+                "data"=>$value,
+                "description"=>$description
+            ]);
+            $text = "\xE2\x99\xBB	درخواست شما ثبت شد منتظر تایید مدیریت باشد";
         }
-        $text = "📌 لطفا دقت فرمایید  کیف پول USDT در شبکه TRC20 را وارد فرمایید ";
         $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
-        cache()->set($this->getKeyCache() . $this->getUserId(), "get_withdrawal_usdt_" );
+        return true;
     }
 
 
