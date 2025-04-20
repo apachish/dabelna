@@ -485,8 +485,8 @@ class TextServices
             $this->gameRial();
         elseif (str_contains($this->data, "Game_usdt_"))
             $this->listGame();
-        elseif (str_contains($this->data, "get_card_"))
-            $this->getCard();
+//        elseif (str_contains($this->data, "get_card_"))
+//            $this->getCard();
         elseif (str_contains($this->data, "request_get_card_"))
             $this->listCard(Game::TYPE_USDT);
 
