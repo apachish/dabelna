@@ -524,7 +524,9 @@ class ActionServices extends TextServices
     public function listCard($type)
     {
         $message_id = cache()->get("buy_game_" .  $this->getUserId());
-        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt')->sum("amount");
+        $wallet_usdt = data_get($this->getUser(), 'walletsUsdt');
+        $wallet_usdt_give = data_get($this->getUser(), 'walletsUsdtWithdraw');
+        $usdt = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
 
         $game_id  = (int)str_replace("request_get_card_","",$this->getData());
         $text = "📌 کاربر عزیز یکی از کارت های ";
@@ -543,7 +545,7 @@ class ActionServices extends TextServices
 
         logger("gamee",[$game,$game_id,$type]);
         if($game) {
-            if(($type == Game::TYPE_USDT && $wallet_usdt && $wallet_usdt > data_get($game,"price")) || ($type == Game::TYPE_TEST)) {
+            if(($type == Game::TYPE_USDT && $wallet_usdt && $usdt >= data_get($game,"price")) || ($type == Game::TYPE_TEST)) {
                 $keyboard = [];
                 $m = 0;
                 $k = 0;
