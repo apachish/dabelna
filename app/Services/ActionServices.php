@@ -12,6 +12,7 @@ use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
 use Apachish\Dabelna\App\Models\Wallet;
 use App\Jobs\SendMessageAccountingBot;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Telegram\Bot\FileUpload\InputFile;
 use Telegram\Bot\Keyboard\Keyboard;
@@ -641,27 +642,35 @@ class ActionServices extends TextServices
             if ($game->cards->count()) {
                 $card = $id?$game->cards->where("id",$id)->first():$game->cards->random(1)->first();
                 if($card) {
-                    $path_report = storage_path(data_get($card, "file"));
-                    $name_file = convertNumber(toJalali(now(), "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
-                    $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
-                    $game->remaining_card -=1;
-                    if( $game->remaining_card >= 0) {
-                        $card->player_id = $this->getUser()->id;
-                        $card->update();
+                    DB::beginTransaction();
+                    try {
+                        $path_report = storage_path(data_get($card, "file"));
+                        $name_file = convertNumber(toJalali(now(), "m_d")) . slug_seo(data_get($this->getUser(), "fullName"), "_") . "_" . data_get($game, "id") . "_" . data_get($card, "id");
+                        $text = "بلیط بازی خود تا زمان قرعه کشی نزد خود نگه دارید";
+                        $game->remaining_card -= 1;
+                        if ($game->remaining_card >= 0) {
+                            $card->player_id = $this->getUser()->id;
+                            $card->update();
 
-                        $keyboard =[];
-                        $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
-                        $response = $this->telegram->sendDocument([
-                            'chat_id' => $this->getUserId(),
-                            'document' => InputFile::create($path_report, $name_file . ".pdf")
-                        ]);
-                        $game->update();
-                        //if game amount
-                        $description = "کاربر ";
-                        $description .= $this->getUser()->fullName."(".$this->getUser()->telegram_id.")";
-                        $description .= "مبلغ:".getPriceFormat($game->price);
-                        $description .= "بازی شماره".$game->id ." نوع بازی :".$game->title."خرید";
-                        $this->reduceCost($game->price,$description);
+                            $keyboard = [];
+                            $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                            $response = $this->telegram->sendDocument([
+                                'chat_id' => $this->getUserId(),
+                                'document' => InputFile::create($path_report, $name_file . ".pdf")
+                            ]);
+                            $game->update();
+                            //if game amount
+                            $description = "کاربر ";
+                            $description .= $this->getUser()->fullName . "(" . $this->getUser()->telegram_id . ")";
+                            $description .= "مبلغ:" . getPriceFormat($game->price);
+                            $description .= "بازی شماره" . $game->id . " نوع بازی :" . $game->title . "خرید";
+                            $this->reduceCost($game->price, $description);
+                            DB::commit();
+                        }
+                    }catch (\Exception $exception){
+                        logger("getCard",["message"=>$exception->getMessage(),"code"=>$exception->getCode()]);
+                        DB::rollback();
+
                     }
                 }else{
                     if($id){
