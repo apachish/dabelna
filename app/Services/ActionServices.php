@@ -658,6 +658,7 @@ class ActionServices extends TextServices
                                 'chat_id' => $this->getUserId(),
                                 'document' => InputFile::create($path_report, $name_file . ".pdf")
                             ]);
+                            logger("response",[$response,$game,$game_id]);
                             $game->update();
                             //if game amount
                             $description = "کاربر ";
