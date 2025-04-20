@@ -646,7 +646,10 @@ class ActionServices extends TextServices
             if(data_get($game,"price") > 0 && $wallet_usdt && $usdt < data_get($game,"price")){
                 $text = "موجودی حساب شما کافی نمی باشد";
                 $keyboard =[];
+                if($message_id)
                 $message_id = $this->getTelegramServices()->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+                else
+                    $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => $text]);
                 return false;
             }
             if ($game->cards->count()) {
