@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Apachish\Dabelna\App\Models\Bot;
+use Apachish\Dabelna\App\Models\DrawnNumber;
 use Apachish\Dabelna\App\Models\Game;
 use Apachish\Dabelna\App\Services\GameService;
 use Illuminate\Console\Command;
@@ -30,8 +31,25 @@ class Test extends Command
     public function handle()
     {
         $game_server = new GameService();
+        $numbers =  DrawnNumber::where("game_id",5)->get();
         $game = Game::with("winners")->where("id", 5)->first();
-        $game_server->sendWinner($game);
+
+        $cards = $game->cards;
+        $numbers->map(function ($drawn_number) use ($cards,$game_server,$game) {
+
+            $winner = $game_server->checkCard($cards,$drawn_number);
+            if($winner)
+            {
+                $game->winners()->syncWithoutDetaching($winner);
+                $game->status = Game::STATUS_FINISHED;
+                $game->save();
+                $game->refresh();
+                $game_server->sendWinner($game);
+            }
+        });
+
+
+//        $game_server->sendWinner($game);
 //        if (str_contains($this->message_cache, "charging_usdt_getFile"))
 //            echo "charging_usdt_getFile";
 //        elseif (str_contains($this->message_cache, "charging_usdt"))
