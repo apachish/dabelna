@@ -41,10 +41,11 @@ class SendTimeLottory implements ShouldQueue
             $text .= " :"."\n";
             $text .= toJalali(data_get($game,"lottery_date"));
 
-            if(data_get($bot,"chanel_id"))
+            if(data_get($bot,"chanel_id") && env("SEND_CHANEL",false))
                 $telegram->sendMessage(['chat_id' => data_get($bot,"chanel_id"), 'text' => $text]);
-            foreach(data_get($game,'cards') as $card){
-                $telegram->sendMessage(['chat_id' => data_get($card,'player.telegram_id'), 'text' => $text]);
+            $users =  data_get($game,'cards')->pluck('player')->groupBy('telegram_id');
+            foreach($users as $key=>$user){
+                $telegram->sendMessage(['chat_id' => $key, 'text' => $text]);
             }
         }
 

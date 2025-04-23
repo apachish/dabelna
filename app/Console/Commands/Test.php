@@ -30,6 +30,13 @@ class Test extends Command
      */
     public function handle()
     {
+
+        $game = Game::with("cards.player")->find(4);
+        $users =  data_get($game,'cards')->pluck('player')->groupBy('telegram_id');
+        foreach ($users as $kry=>$user) {
+            dd($kry);
+        }
+dd($users->count());
         $game_server = new GameService();
         $numbers =  DrawnNumber::where("game_id",5)->get();
 

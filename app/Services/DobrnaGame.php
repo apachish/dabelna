@@ -138,8 +138,8 @@ class DobrnaGame {
 
             Card::create([
                 "title"=> "کارت بازی".$i,
-               "numbers"=>json_encode($card),
-                "marked"=>json_encode($marked),
+               "numbers"=>$card,
+                "marked"=>$marked,
                 "game_id"=>data_get($game,'id'),
                 "file"=>$path."کارت_بازیکن_".$i.'.pdf'
             ]);
