@@ -32,6 +32,7 @@ class Test extends Command
     {
         $game_server = new GameService();
         $numbers =  DrawnNumber::where("game_id",5)->get();
+
         $game = Game::with("winners")->where("id", 5)->first();
 
         $cards = $game->cards;
