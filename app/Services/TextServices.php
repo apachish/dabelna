@@ -569,6 +569,17 @@ class TextServices
                 $keyboard[1] = [
                     ['text' => "برداشت وجه", 'callback_data' => "withdrawal_" . $this->getUser()->id],
                 ];
+                $text_firend = "یه بات باحال پیدا کردم، ببینش!"."\n";
+                $text_firend .= "اگه دوست داشتی بیا بازی کنیم برنده شیم "."\n";
+                $text_firend .= "کد معرف من:"."\n";
+                $text_firend .= $this->getUserId();
+                $keyboard[2] = [
+                    [
+                        'text' => "اشتراک‌گذاری بات با دوستان 💬",
+                        'url' => 'https://t.me/share/url?url=https://t.me/'.data_get($this->bot,"title").'&text='.$text_firend
+
+                    ],
+                ];
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                 cache()->set("increase_in_inventory_" . $this->user_id, $message_id);
                 break;
