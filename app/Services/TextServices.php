@@ -326,7 +326,7 @@ class TextServices
             "منو",
             "\xF0\x9F\x8E\xABخرید بلیط",
             "\xF0\x9F\x92\xB3کیف پول",
-            "پروفایل\xF0\x9F\x91\xA4",
+            "\xF0\x9F\x8E\xB2بازی های من",
             "\xF0\x9F\x93\x9Aقوانین",
             "راهنما\xE2\x81\x89",
             "قوانین را خواندم و آنها را پذیرفتم",
@@ -583,7 +583,10 @@ class TextServices
                 $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                 cache()->set("increase_in_inventory_" . $this->user_id, $message_id);
                 break;
-            case "\xF0\x9F\x93\x9Aقوانین":
+            case "\xF0\x9F\x8E\xB2بازی های من":
+                    $this->telegram_services->sendMessage($this->user_id, "درحال پیاده سازی");
+                break;
+                case "\xF0\x9F\x93\x9Aقوانین":
                 $rule = Setting::where("key", "rule")->where("status", true)->first();
                 if ($rule)
                     $this->telegram_services->sendMessage($this->user_id, $rule->value);
