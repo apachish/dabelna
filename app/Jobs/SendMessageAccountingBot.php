@@ -5,6 +5,7 @@ namespace App\Jobs;
 use Apachish\Dabelna\App\Models\Bot;
 use Apachish\Dabelna\App\Models\Message;
 use Apachish\Dabelna\App\Models\Transaction;
+use App\Services\TelegramServices;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Telegram\Bot\Api;
@@ -15,6 +16,7 @@ class SendMessageAccountingBot implements ShouldQueue
     use Queueable;
     private $order_id;
     private $send;
+    private $telegram_services;
     /**
      * Create a new job instance.
      */
@@ -33,11 +35,14 @@ class SendMessageAccountingBot implements ShouldQueue
         logger("bot_accounting", [$bot_accounting]);
         if ($bot_accounting) {
             try {
+                $this->telegram_services = new TelegramServices($bot_accounting->token);
+
                 $telegram_accounting = new Api($bot_accounting->token);
                 $order = Transaction::with("user")->find($this->order_id);
                 logger("order", [$order]);
                 if ($order) {
                     $admins = $bot_accounting->accessBot;
+                    $user = $order->user;
                     logger("admins", [$admins]);
                     $message = " مبلغ ".getPriceFormat(data_get($order,'amount',0));
                     $message .= " توسط کاربر ".data_get($order,'user.fullName')." واریز شد . ";
@@ -52,7 +57,7 @@ class SendMessageAccountingBot implements ShouldQueue
                             "request_id" => $this->order_id
                         ]);
                         $file = data_get($order, "data");
-                        $path_report = storage_path("app/public/".data_get($file,'2'));
+                        $path_report = storage_path("app/public/".data_get($file,'1'));
                         $name_file = "receipt_".data_get($order,'user.telegram_id')."_".data_get($order,'id').".jpg";
                         logger("aa",[$name_file,$path_report]);
                         $response = $telegram_accounting->sendPhoto([
@@ -65,6 +70,13 @@ class SendMessageAccountingBot implements ShouldQueue
                                 'chat_id' => $admin->user_id,
                                 'text' => $message,
                             ]);
+                        $key_i =   $user->id . "_0_" . $order->id;
+
+                        $keyboard[1] = [
+                            ['text' => "رد", 'callback_data' => "transaction_accept_" . $key_i],
+                            ['text' => "تایید", 'callback_data' => "transaction_reject_" . $key_i],
+                        ];
+                        $message_id = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->user_id, $message, $keyboard);
                     }
                 }
 
