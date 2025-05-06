@@ -137,7 +137,15 @@ class ActionAccountingServices extends TextServices
         }
     }
 
+    public function getServiceTelgramUser(): TelegramServices
+    {
+        return $this->service_telgram_user;
+    }
 
+    public function setServiceTelgramUser(TelegramServices $service_telgram_user): void
+    {
+        $this->service_telgram_user = $service_telgram_user;
+    }
     private function listUser($type = null, $object, $page = 1, $message_id = null, $filter = null)
     {
         $users = UserTelegram::withTrashed()->with([ "walletsUsdtWithdraw", "walletsUsdt"])
