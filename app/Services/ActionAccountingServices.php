@@ -50,9 +50,9 @@ class ActionAccountingServices extends TextServices
         $this->removeMessageCache();
 
         if (str_contains($this->getData(), "pre_"))
-            $this->pre($this);
+            $this->pre();
         elseif (str_contains($this->getData(), "next_"))
-            $this->next($this);
+            $this->next();
         elseif (str_contains($this->getData(), "get_message_user_"))
             $this->getMessageUser($this);
         elseif (str_contains($this->getData(), "add_chanel_"))
@@ -198,16 +198,16 @@ class ActionAccountingServices extends TextServices
             $keyboard[$i][] = ['text' => "بعدی", "callback_data" => "next_" . $next  . ($filter ? "_" . $filter : null)];
 
         if ($message_id)
-           $this->telegram_services->editMessageTextAndInlineKeyboard($object->getUserId(), $message_id, $text, $keyboard);
+           $this->telegram_services->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
         else {
            $this->telegram_services->menu_key = "menu_List_user_";
-            $menu =$this->telegram_services->MessageReplyMarkup($object->getTelegram(), $object->getUserId(), $text, $keyboard);
+            $menu =$this->telegram_services->MessageReplyMarkup($this->getTelegram(), $this->getUserId(), $text, $keyboard);
         }
     }
 
-    public function getEditName($object)
+    public function getEditName()
     {
-        $data = str_replace('edit_name_', '', $object->getData());
+        $data = str_replace('edit_name_', '', $this->getData());
         $array = explode("_", $data);
         $role = data_get($array, 0);
         $id = (int)data_get($array, 1);
@@ -222,13 +222,13 @@ class ActionAccountingServices extends TextServices
             $message .= $fullName;
             $message .= "\n\n";
             $message .= " نام و نام خانوادگی جدید وارد کنید ";
-           $this->telegram_services->sendMessage($object->getUserId(), $message);
-            cache()->set($object->getKeyCache() . $object->getUserId(), "edit_name_done_" . $data);
+           $this->telegram_services->sendMessage($this->getUserId(), $message);
+            cache()->set($this->getKeyCache() . $this->getUserId(), "edit_name_done_" . $data);
         }
     }
-    public function setName($object)
+    public function setName()
     {
-        $data = str_replace('edit_name_done_', '', $object->getMessageCache());
+        $data = str_replace('edit_name_done_', '', $this->getMessageCache());
         $array = explode("_", $data);
         $role = data_get($array, 0);
         $id = (int)data_get($array, 1);
@@ -238,50 +238,50 @@ class ActionAccountingServices extends TextServices
         $user_con = UserTelegram::find($id);
 
         if ($user_con) {
-            $user_con->fullName = $object->getMessage();
+            $user_con->fullName = $this->getMessage();
             $user_con->update();
             $message = $user_con->fullName;
             $message .= "\n\n";
             $message .= "نام و نام خانوادگی بروزرسانی شد ";
-           $this->telegram_services->sendMessage($object->getUserId(), $message);
+           $this->telegram_services->sendMessage($this->getUserId(), $message);
         }
-        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
-        $this->listUser($role, $object, $page, $message_id, $filter);
-        cache()->forget($object->getKeyCache() . $object->getUserId());
+        $message_id = cache()->get("menu_List_user_" . $this->getUserId());
+        $this->listUser( $page, $message_id, $filter);
+        cache()->forget($this->getKeyCache() . $this->getUserId());
     }
 
-    public function findUser($object)
+    public function findUser()
     {
-        $this->listUser( 1, null, $object->getMessage());
+        $this->listUser( 1, null, $this->getMessage());
 
-        cache()->forget($object->getKeyCache() . $object->getUserId());
+        cache()->forget($this->getKeyCache() . $this->getUserId());
     }
 
-    public function getMessageGroup($object)
+    public function getMessageGroup()
     {
         $message = "پیامی که می خواهید برای کاربران سیستم ارسال کنید وارد کنید";
-       $this->telegram_services->sendMessage($object->getUserId(), $message);
-        cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_group");
+       $this->telegram_services->sendMessage($this->getUserId(), $message);
+        cache()->set($this->getKeyCache() . $this->getUserId(), "send_message_group");
 
     }
 
-    public function setMessageGroup($object)
+    public function setMessageGroup()
     {
         $users = UserTelegram::get();
         foreach ($users as $user) {
             try {
-                $message_id = $object->service_user->telegram_services->sendMessage($user->telegram_id, $object->getMessage());
+                $message_id = $this->telegram_services->sendMessage($user->telegram_id, $this->getMessage());
             } catch (\Exception $exception) {
                 logger("message send admin " . $user->telegram_id . ":" . $exception->getMessage());
             }
         }
-        cache()->forget($object->getKeyCache() . $object->getUserId());
+        cache()->forget($this->getKeyCache() . $this->getUserId());
 
     }
 
-    public function getMessageUser($object)
+    public function getMessageUser()
     {
-        $data = str_replace('get_message_user_', '', $object->getData());
+        $data = str_replace('get_message_user_', '', $this->getData());
 
         $array = explode("_", $data);
         $id = (int)data_get($array, 1);
@@ -291,59 +291,58 @@ class ActionAccountingServices extends TextServices
             $message .= "\n\n";
             $message .= $user_con->fullName;
             $message .= "ارسال کنید وارد کنید";
-           $this->telegram_services->sendMessage($object->getUserId(), $message);
-            cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_user_" . $user_con->id);
+           $this->telegram_services->sendMessage($this->getUserId(), $message);
+            cache()->set($this->getKeyCache() . $this->getUserId(), "send_message_user_" . $user_con->id);
         }
 
     }
 
-    public function setMessageUser($object)
+    public function setMessageUser()
     {
-        $id = str_replace('send_message_user_', '', $object->getMessageCache());
+        $id = str_replace('send_message_user_', '', $this->getMessageCache());
 
         $user = UserTelegram::find($id);
         if ($user) {
             try {
-                $message_id = $object->service_user->telegram_services->sendMessage($user->telegram_id, $object->getMessage());
-                cache()->forget($object->getKeyCache() . $object->getUserId());
+                $message_id = $this->telegram_services->sendMessage($user->telegram_id, $this->getMessage());
+                cache()->forget($this->getKeyCache() . $this->getUserId());
                 $message = "  پیام به کاربر  $user->fullName  ارسال شد  ";
-               $this->telegram_services->sendMessage($object->getUserId(), $message);
+               $this->telegram_services->sendMessage($this->getUserId(), $message);
             } catch (\Exception $exception) {
                 logger("message send admin " . $user->telegram_id . ":" . $exception->getMessage());
             }
         } else {
-           $this->telegram_services->sendMessage($object->getUserId(), "پیام ارسال نشد");
+           $this->telegram_services->sendMessage($this->getUserId(), "پیام ارسال نشد");
 
         }
 
     }
 
-    public function pre($object)
+    public function pre()
     {
-        $data = str_replace('pre_', '', $object->getData());
+        $data = str_replace('pre_', '', $this->getData());
         $array = explode("_", $data);
         $page = (int)data_get($array, 0);
-        $role = data_get($array, 1, null);
         $filter = data_get($array, 2, null);
-        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+        $message_id = cache()->get("menu_List_user_" . $this->getUserId());
         if ($message_id)
             $this->listUser( $page, $message_id, $filter);
     }
 
-    public function next($object)
+    public function next()
     {
-        $data = str_replace('next_', '', $object->getData());
+        $data = str_replace('next_', '', $this->getData());
         $array = explode("_", $data);
         $page = (int)data_get($array, 0);
         $role = data_get($array, 1, null);
         $filter = data_get($array, 2, null);
-        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+        $message_id = cache()->get("menu_List_user_" . $this->getUserId());
         if ($message_id)
             $this->listUser( $page, $message_id, $filter);
     }
-    public function addChanel($object)
+    public function addChanel()
     {
-        $data = str_replace('add_chanel_', '', $object->getData());
+        $data = str_replace('add_chanel_', '', $this->getData());
         $array = explode("_", $data);
         $role = data_get($array, 0);
         $id = (int)data_get($array, 1);
@@ -351,8 +350,8 @@ class ActionAccountingServices extends TextServices
         $filter = data_get($array, 3, null);
         $user_con = UserTelegram::find($id);
         if ($user_con) {
-            $response = $object->telegram->createChatInviteLink([
-                'chat_id' => data_get($object, "bot.chanel_id"),
+            $response = $this->telegram->createChatInviteLink([
+                'chat_id' => data_get($this->bot, "chanel_id"),
                 'name' => Str::slug($user_con->fullName, "_"),
                 'expire_date' => time() + 150, // لینک به مدت 24 ساعت معتبر است
                 'member_limit' => 1, // تعداد اعضای جدیدی که با این لینک می‌توانند بپیوندند
@@ -361,15 +360,15 @@ class ActionAccountingServices extends TextServices
             $inviteLink = data_get($response, "invite_link");
 
 
-            $object->telegram->sendMessage([
-                'chat_id' => $object->getUserId(),
+            $this->telegram->sendMessage([
+                'chat_id' => $this->getUserId(),
                 'text' => "لینک دعوت کانال برای کاربر ارسال شد",
             ]);
             // ارسال لینک دعوت به کاربر
             $message_link = "لطفا با استفاده از لینک دعوت[فقط ۳ دقیقه معتبر می باشد] به کانال  " . env("APP_NAME") . " بپیوندید: ";
             $message_link .= "\n\n " . $inviteLink;
-            $object->service_user->telegram_services->sendMessage($user_con->telegram_id, $message_link);
-            $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+            $this->telegram_services->sendMessage($user_con->telegram_id, $message_link);
+            $message_id = cache()->get("menu_List_user_" . $this->getUserId());
             $this->listUser( $page, $message_id, $filter);
         }
     }
