@@ -4,6 +4,7 @@ namespace App\Services;
 
 
 
+use Apachish\Dabelna\App\Models\Bot;
 use Apachish\Dabelna\App\Models\UserTelegram;
 use Illuminate\Support\Str;
 use Telegram\Bot\Api;
@@ -12,7 +13,6 @@ use Telegram\Bot\FileUpload\InputFile;
 
 class ActionAccountingServices extends TextServices
 {
-    private $service_telgram_user;
     public $keyboard_menu = [
         [
             ["text" => "ارسال پیام برای همه\xF0\x9F\x92\xAC"],
@@ -97,7 +97,7 @@ class ActionAccountingServices extends TextServices
             case "تراکنش در انتظار تایید\xF0\x9F\x92\xB3":
                 break;
             case "لیست کاربران\xF0\x9F\x91\xA4":
-                $this->listUser(null,$this);
+                $this->listUser();
                 break;
 
             case "\xF0\x9F\x94\x8Dجستجو":
@@ -137,16 +137,13 @@ class ActionAccountingServices extends TextServices
         }
     }
 
-    public function getServiceTelgramUser(): TelegramServices
-    {
-        return $this->service_telgram_user;
-    }
+
 
     public function setServiceTelgramUser(TelegramServices $service_telgram_user): void
     {
         $this->service_telgram_user = $service_telgram_user;
     }
-    private function listUser($type = null, $object, $page = 1, $message_id = null, $filter = null)
+    private function listUser( $page = 1, $message_id = null, $filter = null)
     {
         $users = UserTelegram::withTrashed()->with([ "walletsUsdtWithdraw", "walletsUsdt"])
         ;
@@ -165,7 +162,7 @@ class ActionAccountingServices extends TextServices
         $text = "\n\nلیست  کاربران";
         $text .= "\n\n";
         $text .= "تعداد کاربران:".$users->count();
-        $users->each(function ($user) use (&$keyboard, &$i, $page, $filter, $object) {
+        $users->each(function ($user) use (&$keyboard, &$i, $page, $filter) {
             $text = $user->fullName ?: $user->first_name . " " . $user->last_name;
             $key_i = $user->role . "_" . $user->id . "_" . $page;
             if ($filter)
@@ -185,7 +182,7 @@ class ActionAccountingServices extends TextServices
                 ['text' => "\xF0\x9F\x91\xA4".$user->children->count(), 'callback_data' => null],
                 ['text' => "\xF0\x9F\x92\xB5".$usdt, 'callback_data' => null],
             ];
-            if (!$object->getServiceTelgramUser()->checkMember(data_get($object, "bot.chanel_id"), $user->telegram_id))
+            if (!$this->telegram_services->checkMember(data_get($this->bot, "chanel_id"), $user->telegram_id))
                 $array[] = ['text' => "\xE2\x9E\x95", 'callback_data' => 'add_chanel_' . $key_i];
             $keyboard[$i++] = $array;
             $array = [];
@@ -196,15 +193,15 @@ class ActionAccountingServices extends TextServices
             $keyboard[$i++] = $array;
         });
         if ($pre)
-            $keyboard[$i][] = ['text' => "قبلی", "callback_data" => "pre_" . $pre . ($type ? "_" . $type : "_") . ($filter ? "_" . $filter : null)];
+            $keyboard[$i][] = ['text' => "قبلی", "callback_data" => "pre_" . $pre  . ($filter ? "_" . $filter : null)];
         if ($next)
-            $keyboard[$i][] = ['text' => "بعدی", "callback_data" => "next_" . $next . ($type ? "_" . $type : "_") . ($filter ? "_" . $filter : null)];
+            $keyboard[$i][] = ['text' => "بعدی", "callback_data" => "next_" . $next  . ($filter ? "_" . $filter : null)];
 
         if ($message_id)
-            $object->getTelegramServices()->editMessageTextAndInlineKeyboard($object->getUserId(), $message_id, $text, $keyboard);
+           $this->telegram_services->editMessageTextAndInlineKeyboard($object->getUserId(), $message_id, $text, $keyboard);
         else {
-            $object->getTelegramServices()->menu_key = "menu_List_user_";
-            $menu = $object->getTelegramServices()->MessageReplyMarkup($object->getTelegram(), $object->getUserId(), $text, $keyboard);
+           $this->telegram_services->menu_key = "menu_List_user_";
+            $menu =$this->telegram_services->MessageReplyMarkup($object->getTelegram(), $object->getUserId(), $text, $keyboard);
         }
     }
 
@@ -225,7 +222,7 @@ class ActionAccountingServices extends TextServices
             $message .= $fullName;
             $message .= "\n\n";
             $message .= " نام و نام خانوادگی جدید وارد کنید ";
-            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+           $this->telegram_services->sendMessage($object->getUserId(), $message);
             cache()->set($object->getKeyCache() . $object->getUserId(), "edit_name_done_" . $data);
         }
     }
@@ -246,7 +243,7 @@ class ActionAccountingServices extends TextServices
             $message = $user_con->fullName;
             $message .= "\n\n";
             $message .= "نام و نام خانوادگی بروزرسانی شد ";
-            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+           $this->telegram_services->sendMessage($object->getUserId(), $message);
         }
         $message_id = cache()->get("menu_List_user_" . $object->getUserId());
         $this->listUser($role, $object, $page, $message_id, $filter);
@@ -255,7 +252,7 @@ class ActionAccountingServices extends TextServices
 
     public function findUser($object)
     {
-        $this->listUser(null, $object, 1, null, $object->getMessage());
+        $this->listUser( 1, null, $object->getMessage());
 
         cache()->forget($object->getKeyCache() . $object->getUserId());
     }
@@ -263,7 +260,7 @@ class ActionAccountingServices extends TextServices
     public function getMessageGroup($object)
     {
         $message = "پیامی که می خواهید برای کاربران سیستم ارسال کنید وارد کنید";
-        $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+       $this->telegram_services->sendMessage($object->getUserId(), $message);
         cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_group");
 
     }
@@ -294,7 +291,7 @@ class ActionAccountingServices extends TextServices
             $message .= "\n\n";
             $message .= $user_con->fullName;
             $message .= "ارسال کنید وارد کنید";
-            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+           $this->telegram_services->sendMessage($object->getUserId(), $message);
             cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_user_" . $user_con->id);
         }
 
@@ -310,12 +307,12 @@ class ActionAccountingServices extends TextServices
                 $message_id = $object->service_user->telegram_services->sendMessage($user->telegram_id, $object->getMessage());
                 cache()->forget($object->getKeyCache() . $object->getUserId());
                 $message = "  پیام به کاربر  $user->fullName  ارسال شد  ";
-                $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+               $this->telegram_services->sendMessage($object->getUserId(), $message);
             } catch (\Exception $exception) {
                 logger("message send admin " . $user->telegram_id . ":" . $exception->getMessage());
             }
         } else {
-            $object->getTelegramServices()->sendMessage($object->getUserId(), "پیام ارسال نشد");
+           $this->telegram_services->sendMessage($object->getUserId(), "پیام ارسال نشد");
 
         }
 
@@ -330,7 +327,7 @@ class ActionAccountingServices extends TextServices
         $filter = data_get($array, 2, null);
         $message_id = cache()->get("menu_List_user_" . $object->getUserId());
         if ($message_id)
-            $this->listUser($role, $object, $page, $message_id, $filter);
+            $this->listUser( $page, $message_id, $filter);
     }
 
     public function next($object)
@@ -342,7 +339,7 @@ class ActionAccountingServices extends TextServices
         $filter = data_get($array, 2, null);
         $message_id = cache()->get("menu_List_user_" . $object->getUserId());
         if ($message_id)
-            $this->listUser($role, $object, $page, $message_id, $filter);
+            $this->listUser( $page, $message_id, $filter);
     }
     public function addChanel($object)
     {
@@ -373,7 +370,7 @@ class ActionAccountingServices extends TextServices
             $message_link .= "\n\n " . $inviteLink;
             $object->service_user->telegram_services->sendMessage($user_con->telegram_id, $message_link);
             $message_id = cache()->get("menu_List_user_" . $object->getUserId());
-            $this->listUser($role, $object, $page, $message_id, $filter);
+            $this->listUser( $page, $message_id, $filter);
         }
     }
 }
