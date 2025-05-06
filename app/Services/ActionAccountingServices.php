@@ -59,6 +59,8 @@ class ActionAccountingServices extends TextServices
             $this->addChanel($this);
         elseif (str_contains($this->getData(), "edit_name_"))
             $this->getEditName($this);
+        elseif (str_contains($this->getData(), "null"))
+            return null;
 
     }
 
@@ -179,8 +181,8 @@ class ActionAccountingServices extends TextServices
             $array = [
                 ['text' => "\xE2\x9C\x8Fویرایش کاربر", 'callback_data' => 'edit_name_' . $key_i],
                 ['text' => "\xF0\x9F\x92\xACپیام", 'callback_data' => 'send_message_' . $key_i],
-                ['text' => "\xF0\x9F\x91\xA4".$user->children->count(), 'callback_data' => null],
-                ['text' => "\xF0\x9F\x92\xB5".$usdt, 'callback_data' => null],
+                ['text' => "\xF0\x9F\x91\xA4".$user->children->count(), 'callback_data' => "null"],
+                ['text' => "\xF0\x9F\x92\xB5".$usdt, 'callback_data' => "null"],
             ];
             if (!$this->telegram_services->checkMember(data_get($this->bot, "chanel_id"), $user->telegram_id))
                 $array[] = ['text' => "\xE2\x9E\x95", 'callback_data' => 'add_chanel_' . $key_i];
