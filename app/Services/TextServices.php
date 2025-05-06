@@ -152,7 +152,7 @@ class TextServices
             ->withCount("transactionsCompleted")
             ->withCount("transactionsFailed")
             ->withCount("transactions")
-            ->with(["transactions", "walletsRial", "walletsUsdt"])
+            ->with(["transactions", "walletsUsdtWithdraw", "walletsUsdt"])
             ->withTrashed()->first();
         if ($user_telegram == null && $this->user_id) {
             $update = $this->update;

@@ -3,17 +3,9 @@
 namespace App\Services;
 
 
-use App\Jobs\CancelOrder;
-use App\Jobs\CancelOrderAccounting;
-use App\Models\Bot;
-use App\Models\BotMenuUser;
-use App\Models\RequestTransfer;
-use App\Models\Transfer;
-use App\Models\UserTelegram;
-use App\Services\Admin\CustomerServices;
-use App\Services\Admin\SettingServices;
-use App\Services\Admin\TimeServices;
-use App\Services\Admin\TransactionServices;
+
+use Apachish\Dabelna\App\Models\UserTelegram;
+use Illuminate\Support\Str;
 use Telegram\Bot\Api;
 use Telegram\Bot\FileUpload\InputFile;
 
@@ -23,8 +15,10 @@ class ActionAccountingServices extends TextServices
 
     public $keyboard_menu = [
         [
+            ["text" => "ارسال پیام برای همه\xF0\x9F\x92\xAC"],
+            ['text' => "تراکنش در انتظار تایید\xF0\x9F\x92\xB3"],
             ["text" => "\xF0\x9F\x94\x8Dجستجو"],
-            ['text' => "\xF0\x9F\x94\x8D\xF0\x9F\x93\x83جستجو با حواله"]
+            ["text" => "لیست کاربران\xF0\x9F\x91\xA4"],
         ],
     ];
 
@@ -39,8 +33,10 @@ class ActionAccountingServices extends TextServices
 
         $access_text = [
             "/start",
+            "ارسال پیام برای همه\xF0\x9F\x92\xAC",
+            "تراکنش در انتظار تایید\xF0\x9F\x92\xB3",
             "\xF0\x9F\x94\x8Dجستجو",
-            "\xF0\x9F\x94\x8D\xF0\x9F\x93\x83جستجو با حواله",
+            "لیست کاربران\xF0\x9F\x91\xA4",
         ];
         if (in_array($this->message, $access_text))
             return true;
@@ -50,77 +46,19 @@ class ActionAccountingServices extends TextServices
 
     public function actionData()
     {
-        if (str_contains($this->getData(), "get_report_")) {
-            $id = str_replace('get_report_', '', $this->getData());
-            if ($id) {
-                $message = "تاریخ را بصورت زیر وارد کنید";
-                $message .= "   1403/03/09 ";
-                $this->getTelegramServices()->sendMessage($this->getUserId(), $message);
-                cache()->set($this->getKeyCache() . $this->getUserId(), "get_report_" . $id);
+        cache()->forget($this->getKeyCache() . $this->getUserId());
+        $this->removeMessageCache();
 
-            }
-
-        } elseif (str_contains($this->getData(), "no_request_transfer_")) {
-            $id = str_replace('no_request_transfer_', '', $this->getData());
-            $message_id = cache()->get("cancel_number_transaction_" . $id);
-            $this->telegram_services->editMessageReplyMarkup($this->getUserId(), $message_id, new \stdClass());
-        } elseif (str_contains($this->getData(), "cancel_request_transfer_")) {
-            $id = str_replace('cancel_request_transfer_', '', $this->getData());
-
-            $order = RequestTransfer::with(["userRequest.customer", "transferReport", "dailyRequest"])->find($id);
-            if ($order) {
-                dispatch(new CancelOrder($id));
-                dispatch(new CancelOrderAccounting($id));
-
-//                $transfer = $order->transferReport;
-//
-//                if (data_get($order, "userRequest.role") == "customer") {
-//                    $transaction_party_req = "مشاهده فقط برای سرگروه";
-//                    $transaction_party_reqs = data_get($order, "userRequest.fullName") . "(" . data_get($order, "userRequest.customer.fullName") . ")";
-//                } else
-//                    $transaction_party_req = data_get($order, "userRequest.fullName");
-//
-//                if (data_get($order, "transferReport.user.role") == "customer") {
-//                    $transaction_party = "مشاهده فقط برای سرگروه";
-//                    $transaction_partys = data_get($order, "transferReport.user.fullName") . "(" . data_get($order, "transferReport.user.customer.fullName") . ")";
-//                } else
-//                    $transaction_party = data_get($order, "transferReport.user.fullName");
-//
-//
-//                /*
-//                 * message for req and head
-//                 */
-//                $message = $this->getStr(1, $transfer, $order, $transaction_party);
-//                $this->sendBotWord(data_get($order, "userRequest.telegram_id"), $message);
-//
-//                if (data_get($order, "userRequest.role") == "customer") {
-//                    $message = $this->getStr(1, $transfer, $order, $transaction_partys);
-//                    $this->sendBotCustomer(data_get($order, "userRequest.customer.telegram_id"), $message);
-//                }
-//
-//                /*
-//             * message for transfer and head
-//             */
-//                $message = $this->getStr(2, $transfer, $order, $transaction_party_req);
-//
-//                $this->sendBotWord(data_get($order, "transferReport.user.telegram_id"), $message);
-//                if (data_get($order, "transferReport.user.role") == "customer") {
-//                    $message = $this->getStr(2, $transfer, $order, $transaction_party_reqs);
-//                    $this->sendBotCustomer(data_get($order, "transferReport.user.customer.telegram_id"), $message);
-//                }
-
-                $this->getTelegramServices()->sendMessage($this->getUserId(), "کنسل شد پیغام برای مشتریان و سرگروه ارسال شد");
-//
-//                $order->dailyRequest->delete();
-//                $order->delete();
-                $message_id = cache()->get("cancel_number_transaction_" . $order->id);
-                $this->telegram_services->editMessageReplyMarkup($this->getUserId(), $message_id, new \stdClass());
-
-            } else {
-                $this->getTelegramServices()->sendMessage($this->getUserId(), "موفق به کنسل کردن معامله نشد");
-
-            }
-        }
+        if (str_contains($this->getData(), "pre_"))
+            $this->pre($this);
+        elseif (str_contains($this->getData(), "next_"))
+            $this->next($this);
+        elseif (str_contains($this->getData(), "get_message_user_"))
+            $this->getMessageUser($this);
+        elseif (str_contains($this->getData(), "add_chanel_"))
+            $this->addChanel($this);
+        elseif (str_contains($this->getData(), "edit_name_"))
+            $this->getEditName($this);
 
     }
 
@@ -136,8 +74,8 @@ class ActionAccountingServices extends TextServices
                         'text' => $message,
                     ]
                 );
-            }catch (\Exception $exception){
-                logger("get error",[
+            } catch (\Exception $exception) {
+                logger("get error", [
                     $exception->getMessage(),
                     $exception->getLine(),
                     $exception->getCode(),
@@ -148,44 +86,25 @@ class ActionAccountingServices extends TextServices
         }
     }
 
-    private function qsendBotWord($chat_id, array|string $message): void
-    {
-        $bot_user = Bot::where("title", "botUser")->first();
-        if ($bot_user) {
-            try {
-                $telegram_customer = new Api($bot_user->token);
-                $send_user = $telegram_customer->sendMessage(
-                    [
-                        'chat_id' => $chat_id,
-                        'text' => $message,
-                    ]
-                );
-
-            }catch (\Exception $exception){
-                    logger("get error",[
-                        $exception->getMessage(),
-                        $exception->getLine(),
-                        $exception->getCode(),
-                        $exception->getTrace(),
-                        $exception->getFile()
-                    ]);
-                }
-        }
-    }
 
     public function actionText()
     {
         cache()->forget($this->getKeyCache() . $this->getUserId());
         switch ($this->getMessage()) {
-            case "\xF0\x9F\x94\x8D\xF0\x9F\x93\x83جستجو با حواله":
-                $this->getTelegramServices()->sendMessage($this->getUserId(), "شماره حواله مربوطه را وارد کنید");
-                cache()->set($this->getKeyCache() . $this->getUserId(), "set_number_transaction");
+            case "ارسال پیام برای همه\xF0\x9F\x92\xAC":
+                $this->getMessageGroup();
                 break;
+            case "تراکنش در انتظار تایید\xF0\x9F\x92\xB3":
+                break;
+            case "لیست کاربران\xF0\x9F\x91\xA4":
+                $this->listUser();
+                break;
+
             case "\xF0\x9F\x94\x8Dجستجو":
                 $message = "\n\n";
                 $message .= "شماره موبایل یا نام شخص را وارد کنید";
                 $this->getTelegramServices()->sendMessage($this->getUserId(), $message);
-                cache()->set($this->getKeyCache() . $this->getUserId(), "search_customer");
+                cache()->set($this->getKeyCache() . $this->getUserId(), "find_user");
                 break;
             case  "/start":
                 $this->getTelegramServices()->sendMessage($this->getUserId(), "خوش آمدید");
@@ -196,254 +115,257 @@ class ActionAccountingServices extends TextServices
     public function actionTextCache()
     {
         $key_case = $this->getMessageCache();
-        if (str_contains($this->getMessageCache(), "get_report_"))
-            $key_case = "get_report_";
-
+        if (str_contains($this->getMessageCache(), "edit_name_done_"))
+            $key_case = "edit_name_done_";
+        elseif (str_contains($this->getMessageCache(), "send_message_user_"))
+            $key_case = "send_message_user_";
 
         switch ($key_case) {
 
-            case "set_number_transaction":
-                $order_buy = RequestTransfer::with(["userRequest.customer", "transferReport"])->find($this->getMessage());
-                if ($order_buy) {
-                    $message = $this->getfactor($order_buy);
-                    $keyboard[0][0] = [
-                        'text' => "کنسل کردن",
-                        'callback_data' => "cancel_request_transfer_" . $order_buy->id,
-                    ];
-                    $keyboard[0][1] = [
-                        'text' => "لغو ",
-                        'callback_data' => "no_request_transfer_" . $order_buy->id,
-                    ];
-                    $message_result = $this->telegram_services->MessageReplyMarkup($this->telegram, $this->getUserId(), $message, $keyboard, false);
-                    cache()->set("cancel_number_transaction_" . $order_buy->id, $message_result);
-                    cache()->forget($this->getKeyCache() . $this->getUserId());
-                } else {
-                    $this->getTelegramServices()->sendMessage($this->getUserId(), "یافت نشد");
-                }
+            case "send_message_user_":
+                $this->setMessageUser($this);
                 break;
-            case "search_customer":
-                $users = UserTelegram::query();
-                $users->where(function ($query) {
-                    $query->where("fullName", "like", "%" . $this->getMessage() . "%");
-                    $query->orWhere("mobile", "like", "%" . $this->getMessage() . "%");
-                });
-                $users = $users->get();
-                $i = 0;
-                if ($users->count()) {
-                    $text = "از میان همکاران و مشتریان زیر  را انتخاب کنید";
-                    foreach ($users as $user)
-                        $keyboard[$i++][] = ['text' => $user->fullName, "callback_data" => "get_report_" . $user->id];
-
-                    $menu = $this->getTelegramServices()->MessageReplyMarkup($this->getTelegram(), $this->getUserId(), $text, $keyboard);
-                    cache()->set("set_head_done_" . $this->getUserId(), $menu);
-                    cache()->forget($this->getKeyCache() . $this->getUserId());
-
-                } else {
-                    $this->getTelegramServices()->sendMessage($this->getUserId(), "کاربری یافت نشد ");
-
-                }
+            case "send_message_group":
+                $this->setMessageGroup($this);
                 break;
-            case "get_report_":
-                $id = str_replace('get_report_', '', $this->getMessageCache());
-                $customer = UserTelegram::find($id);
-                if (!isValidShamsiDate($this->getMessage()))
-                    $this->getTelegramServices()->sendMessage($this->getUserId(), "فرمت تاریخ دست نمی باشد");
-                elseif ($customer) {
-                    $date = $this->getMessage();
-                    $date = toGregorian($this->getMessage(), "Y/m/d");
-
-                    $date_p = toJalali($date, "Y_m_d");
-
-                    $me = RequestTransfer::with(["transferReport" => function ($query) use ($customer, $date) {
-                        $query->where("user_id", $customer->id);
-                        $query->whereDate("date", $date);
-                        $query->with("user");
-                    }, "userRequest"])
-                        ->whereHas("transferReport", function ($query) use ($customer, $date) {
-                            $query->where("user_id", $customer->id);
-                            $query->whereDate("date", $date);
-                        })->get();
-                    $request = RequestTransfer::where("request_id", $customer->id)
-                        ->with(["transferReport" => function ($query) use ($date) {
-                            $query->with("user");
-                            $query->whereDate("date", $date);
-                        }, "userRequest"])
-                        ->whereHas("transferReport", function ($query) use ($date) {
-                            $query->whereDate("date", $date);
-                        })->get();
-
-                    $request_transfer = [];
-                    foreach ($me as $req) {
-                        $request_transfer[] = $req;
-                        if (data_get($customer, 'id') == data_get($req, 'transferReport.user_id')) {
-                            $req->type_label = data_get($req, "type") == "buy" ? "sell" : "buy";
-                            if (data_get($req, "userRequest.customer"))
-                                $req->said = data_get($req, "userRequest.fullName") . "(" . data_get($req, "userRequest.customer.fullName") . ")";
-                            else
-                                $req->said = data_get($req, "userRequest.fullName");
-                            $req->color = $req->type_label == "sell" ? "#ef4444" : "dodgerblue";
-                        } else {
-                            $req->type_label = data_get($req, "type");
-                            if (data_get($req, "transferReport.user.customer"))
-                                $req->said = data_get($req, "transferReport.user.fullName") . "(" . data_get($req, "transferReport.user.customer.fullName") . ")";
-                            else
-                                $req->said = data_get($req, "transferReport.user.fullName");
-                            $req->color = $req->type_label == "sell" ? "#ef4444" : "dodgerblue";
-
-                        }
-                    }
-                    foreach ($request as $req) {
-                        $request_transfer[] = $req;
-                        if (data_get($customer, 'id') == data_get($req, 'transferReport.user_id')) {
-                            $req->type_label = data_get($req, "type") == "buy" ? "sell" : "buy";
-                            if (data_get($req, "userRequest.customer"))
-                                $req->said = data_get($req, "userRequest.fullName") . "(" . data_get($req, "userRequest.customer.fullName") . ")";
-                            else
-                                $req->said = data_get($req, "userRequest.fullName");
-                            $req->color = $req->type_label == "sell" ? "#ef4444" : "dodgerblue";
-
-                        } else {
-
-                            $req->type_label = data_get($req, "type");
-                            if (data_get($req, "transferReport.user.customer"))
-                                $req->said = data_get($req, "transferReport.user.fullName") . "(" . data_get($req, "transferReport.user.customer.fullName") . ")";
-                            else
-                                $req->said = data_get($req, "transferReport.user.fullName");
-                            $req->color = $req->type_label == "sell" ? "#ef4444" : "dodgerblue";
-                        }
-                    }
-                    if ($request_transfer) {
-                        $mpdf = new \Mpdf\Mpdf(['tempDir' => public_path("tmp")]);
-                        $html = view('users.report_pdf', compact('date_p', 'request_transfer', 'customer'))->render();
-                        $mpdf->WriteHTML($html);
-                        $name_file = $this->getUserId() . "_" . $date_p . ".pdf";
-                        $path = "app/public/report/" . $this->getUserId() . "/";
-                        makeDirectoryStorage($path);
-                        $path_report = storage_path($path . $name_file);
-                        $document = $mpdf->Output($path_report, 'F');
-                        $response = $this->telegram->sendDocument([
-                            'chat_id' => $this->getUserId(),
-                            'document' => InputFile::create($path_report, "$date_p.pdf")
-                        ]);
-                    } else {
-                        $this->telegram->sendMessage(['chat_id' => $this->getUserId(), 'text' => 'معامله ای در این تاریخ انجام نشده']);
-                    }
-                } else
-                    $this->getTelegramServices()->sendMessage($this->getUserId(), "کاربری یافت نشد ");
-
+            case "edit_name_done_":
+                $this->setName($this);
                 break;
-
+            case "find_user":
+                $this->findUser($this);
+                break;
         }
     }
 
 
-    public function setHeadCustomer($object)
+    private function listUser($type = null, $object, $page = 1, $message_id = null, $filter = null)
     {
-        $data = str_replace('set_head_done_', '', $object->getData());
+        $users = UserTelegram::withTrashed()->with([ "walletsUsdtWithdraw", "walletsUsdt"])
+        ;
+        if ($filter) {
+            $users->where(function ($query) use ($filter) {
+                $query->where("fullName", "like", "%" . $filter . "%");
+                $query->orWhere("mobile", "like", "%" . $filter . "%");
+            });
+        }
+        $users = $users->simplePaginate(4, ['*'], 'page', $page);
+        $page = $users->currentPage();
+        $next = $users->nextPageUrl() ? (int)str_replace("?page=", "", strstr($users->nextPageUrl(), "?page=")) : null;
+        $pre = $users->previousPageUrl() ? (int)str_replace("?page=", "", strstr($users->previousPageUrl(), "?page=")) : null;
+        $keyboard = [];
+        $i = 0;
+        $text = "\n\nلیست  کاربران";
+        $text .= "\n\n";
+        $text .= "تعداد کاربران:".$users->count();
+        $users->each(function ($user) use (&$keyboard, &$i, $page, $filter, $object) {
+            $text = $user->fullName ?: $user->first_name . " " . $user->last_name;
+            $key_i = $user->role . "_" . $user->id . "_" . $page;
+            if ($filter)
+                $key_i .= "_" . $filter;
 
+            $keyboard[$i++] = [
+                ['text' => "  $text  ", 'callback_data' => "set_user_" . $key_i],
+            ];
+            $wallet_usdt = data_get($user, 'walletsUsdt');
+            $wallet_usdt_give = data_get($user, 'walletsUsdtWithdraw');
+            $usdt = 0;
+            if ($wallet_usdt)
+                $usdt = $wallet_usdt->sum("amount") - $wallet_usdt_give->sum("amount");
+            $array = [
+                ['text' => "\xE2\x9C\x8Fویرایش کاربر", 'callback_data' => 'edit_name_' . $key_i],
+                ['text' => "\xF0\x9F\x92\xACپیام", 'callback_data' => 'send_message_' . $key_i],
+                ['text' => "\xF0\x9F\x91\xA4".$user->children->count(), 'callback_data' => null],
+                ['text' => "\xF0\x9F\x92\xB5".$usdt, 'callback_data' => null],
+            ];
+            if (!$object->getServiceTelgramUser()->checkMember(data_get($object, "bot.chanel_id"), $user->telegram_id))
+                $array[] = ['text' => "\xE2\x9E\x95", 'callback_data' => 'add_chanel_' . $key_i];
+            $keyboard[$i++] = $array;
+            $array = [];
+
+
+
+
+            $keyboard[$i++] = $array;
+        });
+        if ($pre)
+            $keyboard[$i][] = ['text' => "قبلی", "callback_data" => "pre_" . $pre . ($type ? "_" . $type : "_") . ($filter ? "_" . $filter : null)];
+        if ($next)
+            $keyboard[$i][] = ['text' => "بعدی", "callback_data" => "next_" . $next . ($type ? "_" . $type : "_") . ($filter ? "_" . $filter : null)];
+
+        if ($message_id)
+            $object->getTelegramServices()->editMessageTextAndInlineKeyboard($object->getUserId(), $message_id, $text, $keyboard);
+        else {
+            $object->getTelegramServices()->menu_key = "menu_List_user_";
+            $menu = $object->getTelegramServices()->MessageReplyMarkup($object->getTelegram(), $object->getUserId(), $text, $keyboard);
+        }
+    }
+
+    public function getEditName($object)
+    {
+        $data = str_replace('edit_name_', '', $object->getData());
         $array = explode("_", $data);
-        $parent = (int)data_get($array, 0);
-        $role = data_get($array, 1);
-        $id = (int)data_get($array, 2);
-        $page = (int)data_get($array, 3);
-        $filter = data_get($array, 4, null);
+        $role = data_get($array, 0);
+        $id = (int)data_get($array, 1);
+        $page = (int)data_get($array, 2);
+        $filter = data_get($array, 3, null);
+
         $user_con = UserTelegram::find($id);
 
         if ($user_con) {
-            $user_con["agent_id"] = $parent;
+            $fullName = $user_con->fullName ?: $user_con->first_name . " " . $user_con->last_name;
+            $message = " نام و نام خانوادگی :";
+            $message .= $fullName;
+            $message .= "\n\n";
+            $message .= " نام و نام خانوادگی جدید وارد کنید ";
+            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+            cache()->set($object->getKeyCache() . $object->getUserId(), "edit_name_done_" . $data);
+        }
+    }
+    public function setName($object)
+    {
+        $data = str_replace('edit_name_done_', '', $object->getMessageCache());
+        $array = explode("_", $data);
+        $role = data_get($array, 0);
+        $id = (int)data_get($array, 1);
+        $page = (int)data_get($array, 2);
+        $filter = data_get($array, 3, null);
+
+        $user_con = UserTelegram::find($id);
+
+        if ($user_con) {
+            $user_con->fullName = $object->getMessage();
             $user_con->update();
+            $message = $user_con->fullName;
+            $message .= "\n\n";
+            $message .= "نام و نام خانوادگی بروزرسانی شد ";
+            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+        }
+        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+        $this->listUser($role, $object, $page, $message_id, $filter);
+        cache()->forget($object->getKeyCache() . $object->getUserId());
+    }
+
+    public function findUser($object)
+    {
+        $this->listUser(null, $object, 1, null, $object->getMessage());
+
+        cache()->forget($object->getKeyCache() . $object->getUserId());
+    }
+
+    public function getMessageGroup($object)
+    {
+        $message = "پیامی که می خواهید برای کاربران سیستم ارسال کنید وارد کنید";
+        $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+        cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_group");
+
+    }
+
+    public function setMessageGroup($object)
+    {
+        $users = UserTelegram::get();
+        foreach ($users as $user) {
+            try {
+                $message_id = $object->service_user->telegram_services->sendMessage($user->telegram_id, $object->getMessage());
+            } catch (\Exception $exception) {
+                logger("message send admin " . $user->telegram_id . ":" . $exception->getMessage());
+            }
+        }
+        cache()->forget($object->getKeyCache() . $object->getUserId());
+
+    }
+
+    public function getMessageUser($object)
+    {
+        $data = str_replace('get_message_user_', '', $object->getData());
+
+        $array = explode("_", $data);
+        $id = (int)data_get($array, 1);
+        $user_con = UserTelegram::find($id);
+        if ($user_con) {
+            $message = "پیامی که می خواهید برای کاربر";
+            $message .= "\n\n";
+            $message .= $user_con->fullName;
+            $message .= "ارسال کنید وارد کنید";
+            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+            cache()->set($object->getKeyCache() . $object->getUserId(), "send_message_user_" . $user_con->id);
+        }
+
+    }
+
+    public function setMessageUser($object)
+    {
+        $id = str_replace('send_message_user_', '', $object->getMessageCache());
+
+        $user = UserTelegram::find($id);
+        if ($user) {
+            try {
+                $message_id = $object->service_user->telegram_services->sendMessage($user->telegram_id, $object->getMessage());
+                cache()->forget($object->getKeyCache() . $object->getUserId());
+                $message = "  پیام به کاربر  $user->fullName  ارسال شد  ";
+                $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
+            } catch (\Exception $exception) {
+                logger("message send admin " . $user->telegram_id . ":" . $exception->getMessage());
+            }
+        } else {
+            $object->getTelegramServices()->sendMessage($object->getUserId(), "پیام ارسال نشد");
+
+        }
+
+    }
+
+    public function pre($object)
+    {
+        $data = str_replace('pre_', '', $object->getData());
+        $array = explode("_", $data);
+        $page = (int)data_get($array, 0);
+        $role = data_get($array, 1, null);
+        $filter = data_get($array, 2, null);
+        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+        if ($message_id)
+            $this->listUser($role, $object, $page, $message_id, $filter);
+    }
+
+    public function next($object)
+    {
+        $data = str_replace('next_', '', $object->getData());
+        $array = explode("_", $data);
+        $page = (int)data_get($array, 0);
+        $role = data_get($array, 1, null);
+        $filter = data_get($array, 2, null);
+        $message_id = cache()->get("menu_List_user_" . $object->getUserId());
+        if ($message_id)
+            $this->listUser($role, $object, $page, $message_id, $filter);
+    }
+    public function addChanel($object)
+    {
+        $data = str_replace('add_chanel_', '', $object->getData());
+        $array = explode("_", $data);
+        $role = data_get($array, 0);
+        $id = (int)data_get($array, 1);
+        $page = (int)data_get($array, 2);
+        $filter = data_get($array, 3, null);
+        $user_con = UserTelegram::find($id);
+        if ($user_con) {
+            $response = $object->telegram->createChatInviteLink([
+                'chat_id' => data_get($object, "bot.chanel_id"),
+                'name' => Str::slug($user_con->fullName, "_"),
+                'expire_date' => time() + 150, // لینک به مدت 24 ساعت معتبر است
+                'member_limit' => 1, // تعداد اعضای جدیدی که با این لینک می‌توانند بپیوندند
+            ]);
+
+            $inviteLink = data_get($response, "invite_link");
+
+
+            $object->telegram->sendMessage([
+                'chat_id' => $object->getUserId(),
+                'text' => "لینک دعوت کانال برای کاربر ارسال شد",
+            ]);
+            // ارسال لینک دعوت به کاربر
+            $message_link = "لطفا با استفاده از لینک دعوت[فقط ۳ دقیقه معتبر می باشد] به کانال  " . env("APP_NAME") . " بپیوندید: ";
+            $message_link .= "\n\n " . $inviteLink;
+            $object->service_user->telegram_services->sendMessage($user_con->telegram_id, $message_link);
             $message_id = cache()->get("menu_List_user_" . $object->getUserId());
             $this->listUser($role, $object, $page, $message_id, $filter);
-            $action_id = cache()->get("set_head_done_" . $object->getUserId());
-            $object->getTelegramServices()->deleteMessage($object->getUserId(), $action_id);
-            $message = "همکار";
-            $message .= "\n\n";
-            $user_parent = UserTelegram::find($parent);
-            $message .= $user_parent->fullName;
-            $message .= " برای مشتری ";
-            $message .= $user_con->fullName;
-            $message .= " انتخاب شد ";
-            $object->getTelegramServices()->sendMessage($object->getUserId(), $message);
-
         }
     }
-
-    /**
-     * @param \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array $order_buy
-     * @return string
-     */
-    public function getfactor(\Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array $order_buy): string
-    {
-        $message = "شماره حواله:" . data_get($order_buy, 'id');
-        $message .= "\n\n";
-        $message .= "فی:";
-        $message .= number_format(data_get($order_buy, 'price'), 0);
-        $message .= "\n\n";
-        $type = data_get($order_buy, "type");
-        if ($type == "sell") {
-            $title_request = "فروشنده";
-            $title_mal = "خریدار";
-        } else {
-            $title_request = "خریدار";
-            $title_mal = "فروشنده";
-
-        }
-        $transfer = $order_buy->transferReport;
-        if (data_get($order_buy, "userRequest.role") == "customer")
-            $message .= "  $title_request: " . data_get($order_buy, "userRequest.fullName") . "(" . data_get($order_buy, "userRequest.customer.fullName") . ")";
-        else
-            $message .= "  $title_request: " . data_get($order_buy, "userRequest.fullName");
-        $message .= "\n\n";
-        if (data_get($order_buy, "transferReport.user.role") == "customer")
-            $message .= "  $title_mal: " . data_get($order_buy, "transferReport.user.fullName") . "(" . data_get($order_buy, "transferReport.user.customer.fullName") . ")";
-        else
-            $message .= "  $title_mal: " . data_get($order_buy, "transferReport.user.fullName");
-        $message .= "\n\n";
-        $message .= "برای:" . toJalali($transfer->date, "Y/m/d");
-        $message .= "\n\n";
-        $message .= "ساعت:" . toJalali($order_buy->created_at, "H:i:s");
-        $message .= "\n\n";
-        $message .= "مقدار:" . data_get($order_buy, "number") . "کیلو";
-        $message .= "\n\n";
-        $message .= "نوع:" . getTypeTransfer($transfer->type);
-
-        if (data_get($transfer,'description')) {
-            $message .= "\n";
-            $message .= "توضیحات";
-            $message .= "\xE2\x9D\x97 : \n" . data_get($transfer,'description');
-        }
-        return $message;
-    }
-
-    /**
-     * @param mixed $transfer
-     * @param \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array $order
-     * @param mixed $transaction_party_req
-     * @return string
-     */
-    public function getStr($type, mixed $transfer, \Illuminate\Database\Eloquent\Model|\Illuminate\Database\Eloquent\Collection|\Illuminate\Database\Eloquent\Builder|array $order, mixed $transaction_party_req): string
-    {
-        $message = "\xE2\x9D\x8C\xE2\x9D\x97";
-        $message .= "حذف معامله زیر توسط ادمین به درخواست طرفبن معامله";
-        $message .= "\xE2\x9D\x8C\xE2\x9D\x97";
-        $message .= "\n\n";
-        $message .= $type == 1 ? $transfer->message_request_me : $transfer->message_request;
-        $message .= "\n\n";
-        $message .= "مقدار:" . data_get($order, "number") . "کیلو";
-        $message .= "\n\n";
-        $message .= "نوع:" . getTypeTransfer($transfer->type);
-        if ($transfer->description) {
-            $message .= "\n\n";
-            $message .= "توضیحات";
-            $message .= "\xE2\x9D\x97 : \n\n" . $transfer->description;
-        }
-        $message .= "\n\n";
-        $message .= "طرف معامله:" . $transaction_party_req;
-        $message .= "\n\n";
-        $message .= "برای:" . toJalali($transfer->date, "Y/m/d");
-        $message .= "\n\n";
-        $message .= "       شماره حواله:" . data_get($order, 'id');
-        return $message;
-    }
-
 }
