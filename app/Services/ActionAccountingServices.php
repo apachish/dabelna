@@ -147,8 +147,8 @@ class ActionAccountingServices extends TextServices
     }
     private function listUser( $page = 1, $message_id = null, $filter = null)
     {
-        $users = UserTelegram::withTrashed()->with([ "walletsUsdtWithdraw", "walletsUsdt"])
-        ;
+        $users = UserTelegram::withTrashed()->with([ "walletsUsdtWithdraw", "walletsUsdt"]);
+        $count = $users->count();
         if ($filter) {
             $users->where(function ($query) use ($filter) {
                 $query->where("fullName", "like", "%" . $filter . "%");
@@ -163,7 +163,7 @@ class ActionAccountingServices extends TextServices
         $i = 0;
         $text = "\n\nلیست  کاربران";
         $text .= "\n\n";
-        $text .= "تعداد کاربران:".$users->count();
+        $text .= "تعداد کاربران:".$count;
         $users->each(function ($user) use (&$keyboard, &$i, $page, $filter) {
             $text = $user->fullName ?: $user->first_name . " " . $user->last_name;
             $key_i = $user->role . "_" . $user->id . "_" . $page;
