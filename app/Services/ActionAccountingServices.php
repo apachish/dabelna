@@ -5,7 +5,9 @@ namespace App\Services;
 
 
 use Apachish\Dabelna\App\Models\Bot;
+use Apachish\Dabelna\App\Models\Transaction;
 use Apachish\Dabelna\App\Models\UserTelegram;
+use Apachish\Dabelna\App\Models\Wallet;
 use Illuminate\Support\Str;
 use Telegram\Bot\Api;
 use Telegram\Bot\FileUpload\InputFile;
@@ -53,6 +55,17 @@ class ActionAccountingServices extends TextServices
             $this->pre();
         elseif (str_contains($this->getData(), "next_"))
             $this->next();
+        if (str_contains($this->getData(), "transaction_pre_"))
+            $this->preTransaction();
+        elseif (str_contains($this->getData(), "transaction_next_"))
+            $this->nextTransaction();
+
+        elseif (str_contains($this->getData(), "transaction_res_"))
+            $this->getReceipt();
+        elseif (str_contains($this->getData(), "transaction_accept_"))
+            $this->acceptTransaction();
+        elseif (str_contains($this->getData(), "transaction_reject_"))
+            $this->rejectTransaction();
         elseif (str_contains($this->getData(), "get_message_user_"))
             $this->getMessageUser($this);
         elseif (str_contains($this->getData(), "add_chanel_"))
@@ -166,7 +179,7 @@ class ActionAccountingServices extends TextServices
         $text .= "تعداد کاربران:".$count;
         $users->each(function ($user) use (&$keyboard, &$i, $page, $filter) {
             $text = $user->fullName ?: $user->first_name . " " . $user->last_name;
-            $key_i = $user->role . "_" . $user->id . "_" . $page;
+            $key_i =   $user->id . "_" . $page;
             if ($filter)
                 $key_i .= "_" . $filter;
 
@@ -374,4 +387,161 @@ class ActionAccountingServices extends TextServices
             $this->listUser( $page, $message_id, $filter);
         }
     }
+
+    private function listُTransaction( $page = 1, $message_id = null)
+    {
+        $transactions = Transaction::where("amount",">",0)
+            ->whereIn("status",[
+                Transaction::STATUS_PENDING_ACCEPT_RECEIPT,
+                Transaction::STATUS_PENDING_ACCEPT_WITHDRAW
+            ])->with([ "user"]);
+        $count = $transactions->count();
+
+        $transactions = $transactions->simplePaginate(4, ['*'], 'page', $page);
+        $page = $transactions->currentPage();
+        $next = $transactions->nextPageUrl() ? (int)str_replace("?page=", "", strstr($transactions->nextPageUrl(), "?page=")) : null;
+        $pre = $transactions->previousPageUrl() ? (int)str_replace("?page=", "", strstr($transactions->previousPageUrl(), "?page=")) : null;
+        $keyboard = [];
+        $i = 0;
+        $text = "\n\nلیست  تراکنش های در انتظار تایید";
+        $text .= "\n\n";
+        $text .= "تعداد تراکنش:".$count;
+        $transactions->each(function ($transaction) use (&$keyboard, &$i, $page) {
+            $user = $transaction->user;
+            $text = $user->fullName ?: $user->first_name . " " . $user->last_name;
+            $text .= "مبلغ:". $transaction->amount;
+            $key_i =   $user->id . "_" . $page."_" . $transaction->id;
+
+            $keyboard[$i++] = [
+                ['text' => "  $text  ", 'callback_data' => "set_user_" . $key_i],
+            ];
+
+
+            $array = [
+                ['text' => "\xF0\x9F\x93\x83رسید", 'callback_data' => 'transaction_res_' . $key_i],
+                ['text' => "\xE2\x9C\x85تایید", 'callback_data' => 'transaction_accept_' . $key_i],
+                ['text' => "\xE2\x9D\x8Cرد", 'callback_data' => 'transaction_reject_' . $key_i],
+            ];
+
+            $keyboard[$i++] = $array;
+            $array = [];
+
+
+
+
+            $keyboard[$i++] = $array;
+        });
+        if ($pre)
+            $keyboard[$i][] = ['text' => "قبلی", "callback_data" => "transaction_pre_" . $pre ];
+        if ($next)
+            $keyboard[$i][] = ['text' => "بعدی", "callback_data" => "transaction_next_" . $next ];
+
+        if ($message_id)
+            $this->telegram_services->editMessageTextAndInlineKeyboard($this->getUserId(), $message_id, $text, $keyboard);
+        else {
+            $this->telegram_services->menu_key = "menu_List_transaction_";
+            $menu =$this->telegram_services->MessageReplyMarkup($this->getTelegram(), $this->getUserId(), $text, $keyboard);
+        }
+    }
+
+    public function preTransaction()
+    {
+        $data = str_replace('transaction_pre_', '', $this->getData());
+        $array = explode("_", $data);
+        $page = (int)data_get($array, 0);
+        $message_id = cache()->get("menu_List_transaction_" . $this->getUserId());
+        if ($message_id)
+            $this->listُTransaction( $page, $message_id);
+    }
+
+    public function nextTransaction()
+    {
+        $data = str_replace('transaction_next_', '', $this->getData());
+        $array = explode("_", $data);
+        $page = (int)data_get($array, 0);
+        $message_id = cache()->get("menu_List_transaction_" . $this->getUserId());
+        if ($message_id)
+            $this->listُTransaction( $page, $message_id);
+    }
+
+    public function getReceipt()
+    {
+        $data = str_replace('transaction_res_', '', $this->getData());
+        $data = explode("_", $data);
+        $record = Transaction::with("user")->where("user_id",data_get($data, 0))
+            ->find(data_get($data, 2));
+        if($record) {
+            try {
+
+
+            $file = data_get($record, "data");
+            $path_report = storage_path("app/public/" . data_get($file, '2'));
+            $name_file = "receipt_" . data_get($record, 'user.telegram_id') . "_" . data_get($record, 'id') . ".jpg";
+            logger("aa", [$name_file, $path_report]);
+            $response = $this->getTelegram()->sendPhoto([
+                'chat_id' => $this->getUserId(),
+                'photo' => InputFile::create($path_report, $name_file)
+            ]);
+            }catch (\Exception $exception){
+                $this->getTelegram()->sendMessage(['chat_id' => $this->getUserId(), 'text' => "در فایل رسید مشکلی پیش امده"]);
+
+            }
+        }else{
+            $this->getTelegram()->sendMessage(['chat_id' => $this->getUserId(), 'text' => "در ارسال رسید مشکلی پیش امده"]);
+
+        }
+    }
+
+    public function acceptTransaction()
+    {
+        $data = str_replace('transaction_next_', '', $this->getData());
+        $data = explode("_", $data);
+        $record = Transaction::with("user")->where("user_id",data_get($data, 0))
+            ->find(data_get($data, 2));
+        if($record) {
+            $wallet = Wallet::create([
+                "transaction_id" => data_get($record, 'id'),
+                "user_id" => data_get($record, 'user_id'),
+                "amount" => data_get($record, 'amount'),
+                "type" => Wallet::TYPE_USDT,
+                "type_amount" => Wallet::TYPE_AMOUNT_DEPOSIT,
+                "status" => Wallet::STATUS_CONFIRMATION,
+                "description" => "تایید در سیستم",
+                "ref_id" => "qqq"
+            ]);
+
+                $text = "✅ حساب شما به مبلغ";
+                $text .= data_get($record, 'amount');
+                $text .= "شارژ شد";
+                $this->getTelegram()->sendMessage(['chat_id' => data_get($record->user, "telegram_id"), 'text' => $text]);
+
+            // تغییر وضعیت
+            $record->status = Transaction::STATUS_ACCEPT_RECEIPT;
+            $record->save();
+        }else{
+            $this->getTelegram()->sendMessage(['chat_id' => $this->getUserId(), 'text' => "در تایید مشکلی پیش امده"]);
+
+        }
+    }
+
+    public function rejectTransaction()
+    {
+        $data = str_replace('transaction_reject_', '', $this->getData());
+        $data = explode("_", $data);
+        $record = Transaction::with("user")->where("user_id",data_get($data, 0))
+            ->find(data_get($data, 2));
+        if($record) {
+            $record->status = Transaction::STATUS_REJECT_RECEIPT;
+            $record->save();
+
+                $text = "❌ پرداختی شما به مبلغ";
+                $text .= data_get($record, 'amount');
+                $text .= "مورد تایید قرار نگرفت";
+                $this->getTelegram()->sendMessage(['chat_id' => data_get($record->user, "telegram_id"), 'text' => $text]);
+
+        }else{
+            $this->getTelegram()->sendMessage(['chat_id' => $this->getUserId(), 'text' => "در رد مشکلی پیش امده"]);
+        }
+    }
+
 }
