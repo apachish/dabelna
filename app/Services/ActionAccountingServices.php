@@ -92,12 +92,12 @@ class ActionAccountingServices extends TextServices
         cache()->forget($this->getKeyCache() . $this->getUserId());
         switch ($this->getMessage()) {
             case "ارسال پیام برای همه\xF0\x9F\x92\xAC":
-                $this->getMessageGroup();
+                $this->getMessageGroup($this);
                 break;
             case "تراکنش در انتظار تایید\xF0\x9F\x92\xB3":
                 break;
             case "لیست کاربران\xF0\x9F\x91\xA4":
-                $this->listUser();
+                $this->listUser(null,$this);
                 break;
 
             case "\xF0\x9F\x94\x8Dجستجو":
