@@ -12,7 +12,7 @@ use Telegram\Bot\FileUpload\InputFile;
 
 class ActionAccountingServices extends TextServices
 {
-
+    private $service_telgram_user;
     public $keyboard_menu = [
         [
             ["text" => "ارسال پیام برای همه\xF0\x9F\x92\xAC"],
